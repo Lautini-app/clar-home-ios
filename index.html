@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#2E5C3E">
+<title>clar</title>
+<style>
+:root{
+  --paper:#F5F3EE;
+  --green:#2E5C3E;
+  --text:#1C2E1C;
+  --muted:#667566;
+  --line:#DAD6CC;
+  --soft:#EBE6DC;
+  --danger:#8B3A2B;
+  /* Safe-area — funktioniert nativ in WKWebView (Despia) und im Browser. */
+  --sa-top:env(safe-area-inset-top);
+  --sa-bottom:env(safe-area-inset-bottom);
+  --sa-left:env(safe-area-inset-left);
+  --sa-right:env(safe-area-inset-right);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--paper);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;}
+body{min-height:100vh;}
+button,input{font:inherit;color:inherit;}
+button{cursor:pointer;}
+button:disabled{cursor:not-allowed;opacity:.58;}
+.app{min-height:100vh;padding:calc(2rem + var(--sa-top)) calc(1.25rem + var(--sa-right)) calc(2rem + var(--sa-bottom)) calc(1.25rem + var(--sa-left));}
+.screen{display:none;width:100%;min-height:calc(100vh - 4rem);align-items:center;justify-content:center;}
+.screen.active{display:flex;}
+.stack{display:flex;width:100%;max-width:24rem;flex-direction:column;align-items:stretch;gap:1rem;}
+.center{align-items:center;text-align:center;}
+.splash{background:var(--green);color:var(--paper);position:fixed;inset:0;z-index:10;}
+.splash .logo{color:var(--paper);}
+.logo{appearance:none;border:0;background:transparent;color:var(--green);font-size:4rem;font-weight:800;letter-spacing:-0.07em;line-height:0.9;text-align:center;}
+.logo.small{font-size:2.75rem;align-self:center;margin-bottom:.25rem;}
+.title{font-size:1.45rem;line-height:1.15;font-weight:750;letter-spacing:-.03em;color:var(--text);}
+.copy{color:var(--muted);font-size:.98rem;line-height:1.45;}
+.card{width:100%;border:1px solid var(--line);border-radius:1.35rem;background:rgba(245,243,238,.82);box-shadow:0 1rem 2.5rem rgba(46,92,62,.12);padding:1.2rem;}
+.form{display:flex;flex-direction:column;gap:.85rem;width:100%;}
+.field{display:flex;flex-direction:column;gap:.4rem;text-align:left;}
+.label{font-size:.86rem;font-weight:650;color:var(--text);}
+.input-row{position:relative;}
+.input{width:100%;min-height:3.25rem;border:1px solid var(--line);border-radius:.9rem;background:rgba(255,255,255,.72);padding:0 1rem;outline:none;}
+.input:focus{border-color:var(--green);box-shadow:0 0 0 .2rem rgba(46,92,62,.14);}
+.password-input{padding-right:3.25rem;}
+.eye-button{position:absolute;right:.35rem;top:50%;display:grid;width:2.5rem;height:2.5rem;place-items:center;transform:translateY(-50%);border:0;border-radius:.75rem;background:transparent;color:var(--green);}
+.eye-button svg{width:1.25rem;height:1.25rem;stroke:currentColor;}
+.primary{min-height:3.25rem;border-radius:.9rem;font-weight:700;}
+.primary{border:0;background:var(--green);color:var(--paper);}
+.status{min-height:1.25rem;color:var(--muted);font-size:.9rem;line-height:1.35;text-align:center;}
+.status.error{color:var(--danger);}
+.tiles{display:flex;width:100%;max-width:34rem;flex-direction:column;gap:.85rem;}
+.tile-section{width:100%;margin:.35rem 0 -.2rem;color:var(--muted);font-size:.73rem;font-weight:800;letter-spacing:.08em;text-align:left;text-transform:uppercase;}
+.tile{display:flex;min-height:5.85rem;align-items:center;justify-content:space-between;gap:1rem;border:1px solid var(--line);border-radius:14px;background:#fff;padding:1rem;text-decoration:none;color:var(--text);box-shadow:0 .65rem 1.7rem rgba(46,92,62,.08);}
+.tile:active{transform:scale(.99);}
+.tile-icon{display:grid;flex:0 0 auto;width:3rem;height:3rem;place-items:center;border-radius:.9rem;font-size:1.3rem;}
+.tile-body{display:flex;min-width:0;flex:1;align-items:center;gap:.85rem;text-align:left;}
+.tile-text{min-width:0;}
+.tile-name{font-size:1.35rem;font-weight:800;letter-spacing:-.04em;color:var(--green);}
+.tile-desc{margin-top:.2rem;color:var(--muted);font-size:.9rem;}
+.tile-action{display:flex;align-items:center;gap:.55rem;color:var(--green);font-size:1.65rem;font-weight:650;line-height:1;white-space:nowrap;}
+.soon-badge{display:inline-flex;align-items:center;border-radius:999px;background:var(--soft);padding:.15rem .45rem;color:var(--muted);font-size:.66rem;font-weight:800;letter-spacing:.02em;}
+.subscription-actions{display:flex;width:100%;max-width:34rem;flex-wrap:wrap;align-items:center;justify-content:center;gap:.35rem 1rem;margin-top:.1rem;}
+.subscription-status{width:100%;max-width:34rem;border:1px solid var(--line);border-radius:14px;background:#fff;padding:.85rem 1rem;text-align:center;color:var(--muted);font-size:.86rem;line-height:1.4;}
+.subscription-status strong{color:var(--text);font-weight:750;}
+.billing-button{appearance:none;border:0;background:transparent;color:var(--green);font-size:.82rem;font-weight:650;text-decoration:none;}
+.billing-button:hover,.billing-button:focus-visible,.billing-button:active{text-decoration:underline;}
+.topbar{display:flex;width:100%;max-width:34rem;align-items:center;justify-content:center;margin-bottom:1rem;}
+.topbar .logo{font-size:2rem;}
+.paywall-screen{align-items:stretch;justify-content:center;}
+.paywall-screen.active{display:block;}
+.paywall-shell{display:flex;width:100%;max-width:43rem;margin:0 auto;flex-direction:column;gap:1rem;}
+.paywall-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;}
+.paywall-close{display:grid;flex:0 0 auto;width:2.75rem;height:2.75rem;place-items:center;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--green);font-size:1.35rem;line-height:1;}
+.billing-toggle{display:grid;grid-template-columns:1fr 1fr;gap:.25rem;border:1px solid var(--line);border-radius:14px;background:var(--soft);padding:.25rem;}
+.billing-toggle button{display:flex;min-height:3rem;align-items:center;justify-content:center;gap:.45rem;border:0;border-radius:11px;background:transparent;color:var(--muted);font-weight:750;}
+.billing-toggle button.active{background:#fff;color:var(--green);box-shadow:0 .45rem 1.2rem rgba(46,92,62,.1);}
+.recommended-badge,.plan-badge{display:inline-flex;align-items:center;border-radius:999px;background:rgba(46,92,62,.11);padding:.16rem .45rem;color:var(--green);font-size:.65rem;font-weight:800;letter-spacing:.02em;}
+.plan-grid{display:grid;gap:.8rem;}
+.plan-card{position:relative;display:flex;width:100%;align-items:flex-start;justify-content:space-between;gap:1rem;border:1px solid var(--line);border-radius:14px;background:#fff;padding:1rem;text-align:left;box-shadow:0 .65rem 1.7rem rgba(46,92,62,.08);}
+.plan-card.selected{border-color:var(--green);box-shadow:0 0 0 .18rem rgba(46,92,62,.12),0 .85rem 2rem rgba(46,92,62,.12);}
+.plan-copy{display:flex;min-width:0;flex-direction:column;gap:.25rem;}
+.plan-name{font-size:1.05rem;font-weight:800;letter-spacing:-.02em;color:var(--text);}
+.plan-price{color:var(--green);font-size:1.15rem;font-weight:850;white-space:nowrap;}
+.plan-note{color:var(--muted);font-size:.86rem;line-height:1.35;}
+.app-selection{display:flex;flex-direction:column;gap:.75rem;border:1px solid var(--line);border-radius:14px;background:#fff;padding:1rem;box-shadow:0 .65rem 1.7rem rgba(46,92,62,.08);}
+.app-options{display:grid;gap:.55rem;}
+.app-choice{display:flex;align-items:center;gap:.75rem;border:1px solid var(--line);border-radius:14px;background:rgba(245,243,238,.56);padding:.8rem;text-align:left;}
+.app-choice input{width:1.1rem;height:1.1rem;accent-color:var(--green);}
+.app-choice.disabled{opacity:.56;}
+.app-choice.app-coming-soon{opacity:.5;pointer-events:none;position:relative;}
+.coming-soon-badge{display:inline-flex;align-items:center;border-radius:999px;background:rgba(91,122,174,.13);padding:.1rem .4rem;color:#5B7AAE;font-size:.6rem;font-weight:800;letter-spacing:.02em;margin-left:.3rem;vertical-align:middle;}
+.app-choice-text{display:flex;min-width:0;flex:1;flex-direction:column;gap:.12rem;}
+.app-choice-title{font-weight:800;color:var(--text);}
+.app-choice-desc{color:var(--muted);font-size:.86rem;}
+.paywall-submit{width:100%;min-height:3.25rem;border:0;border-radius:14px;background:var(--green);color:var(--paper);font-weight:800;}
+.paywall-submit:disabled{background:var(--line);color:var(--muted);box-shadow:none;}
+.paywall-status{min-height:1.25rem;text-align:center;}
+.modal-backdrop{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(28,46,28,.38);padding:1.25rem;}
+.modal-backdrop.active{display:flex;}
+.modal{width:100%;max-width:23rem;border-radius:1.35rem;background:var(--paper);padding:1.2rem;box-shadow:0 1.5rem 4rem rgba(28,46,28,.24);}
+.modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem;}
+.close{border:0;background:transparent;color:var(--green);font-size:1.4rem;line-height:1;}
+.hidden{display:none!important;}
+.consent-options{display:flex;flex-direction:column;gap:.5rem;margin-top:.5rem;}
+.consent-option{display:flex;flex-direction:column;gap:.2rem;border:1px solid var(--line);border-radius:14px;background:#fff;padding:.75rem;text-align:left;cursor:pointer;}
+.consent-option.selected{border-color:var(--green);box-shadow:0 0 0 .14rem rgba(46,92,62,.12);}
+.consent-option-title{font-weight:800;color:var(--text);font-size:.95rem;}
+.consent-option-desc{color:var(--muted);font-size:.8rem;line-height:1.35;}
+.consent-note{color:var(--muted);font-size:.72rem;line-height:1.4;margin:.6rem 0 .25rem;}
+#consent-submit{width:100%;min-height:2.85rem;border:0;border-radius:14px;background:var(--green);color:var(--paper);font-weight:800;margin-top:.5rem;}
+#consent-submit:disabled{background:var(--line);color:var(--muted);}
+.legal-links{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:.25rem .45rem;padding:1.5rem 0 1rem;font-size:.75rem;}
+.legal-links a{color:var(--muted);text-decoration:none;}
+.legal-links a:hover{text-decoration:underline;}
+.legal-links span{color:var(--line);}
+.offline-banner{position:fixed;left:0;right:0;top:0;z-index:30;display:none;padding:calc(.55rem + var(--sa-top)) 1rem .55rem;background:#8B3A2B;color:#F5F3EE;font-size:.85rem;font-weight:650;text-align:center;letter-spacing:-.01em;}
+.offline-banner.active{display:block;}
+body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
+</style>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2E5C3E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="clar">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+</head>
+<body>
+<div id="offline-banner" class="offline-banner" role="status" aria-live="polite">
+  Keine Verbindung — deine Änderungen werden gespeichert, sobald du wieder online bist.
+</div>
+<main class="app">
+  <section id="splash-screen" class="screen splash active" aria-live="polite">
+    <button class="logo" type="button" data-logo-tap aria-label="clar">clar·</button>
+  </section>
+
+  <section id="login-screen" class="screen" aria-labelledby="login-title">
+    <div class="stack center">
+      <button class="logo small" type="button" data-logo-tap aria-label="clar">clar·</button>
+      <div class="card">
+        <div class="stack">
+          <div>
+            <h1 id="login-title" class="title">Willkommen zu clar</h1>
+            <p id="login-copy" class="copy">Email und Passwort eingeben.</p>
+          </div>
+
+          <form id="auth-form" class="form">
+            <label class="field">
+              <span class="label">Email</span>
+              <input id="auth-email" class="input" type="email" autocomplete="email" required>
+            </label>
+            <label class="field">
+              <span class="label">Passwort</span>
+              <span class="input-row">
+                <input id="auth-password" class="input password-input" type="password" autocomplete="current-password" required>
+                <button class="eye-button" type="button" data-toggle-password="auth-password" aria-label="Passwort anzeigen">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke-width="1.8"/>
+                  </svg>
+                </button>
+              </span>
+            </label>
+            <label id="confirm-field" class="field" style="display:none;">
+              <span class="label">Passwort wiederholen</span>
+              <span class="input-row">
+                <input id="auth-password-confirm" class="input password-input" type="password" autocomplete="new-password">
+                <button class="eye-button" type="button" data-toggle-password="auth-password-confirm" aria-label="Passwort anzeigen">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke-width="1.8"/>
+                  </svg>
+                </button>
+              </span>
+            </label>
+            <div style="display:flex;gap:.6rem;">
+              <button id="register-submit" class="primary" type="button" style="flex:1;background:var(--green);color:var(--paper);">Konto erstellen</button>
+              <button id="login-submit" class="primary" type="submit" style="flex:1;background:transparent;color:var(--green);border:2px solid var(--green);">Anmelden</button>
+            </div>
+          </form>
+
+          <p id="auth-status" class="status" role="status"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="entitlement-screen" class="screen" aria-labelledby="entitlement-title">
+    <div class="stack center">
+      <button class="logo small" type="button" data-logo-tap aria-label="clar">clar·</button>
+      <div class="card">
+        <div class="stack center">
+          <h1 id="entitlement-title" class="title">Abo wird geprüft</h1>
+          <p id="entitlement-status" class="copy">Wir prüfen deine Freischaltungen.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="app-screen" class="screen" style="padding:0;background:#fff;">
+    <div id="app-header" style="position:fixed;top:0;left:0;right:0;z-index:100;background:#2E5C3E;color:#F5F3EE;display:flex;align-items:center;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top));font-size:15px;font-weight:600;">
+      <button id="close-app-btn" style="background:none;border:none;color:#F5F3EE;font-size:15px;font-weight:600;cursor:pointer;padding:0;">← clar</button>
+    </div>
+    <iframe id="app-iframe" src="" style="position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;border:none;padding-top:max(44px,calc(44px + env(safe-area-inset-top)));box-sizing:border-box;touch-action:manipulation;"></iframe>
+  </section>
+
+  <section id="tiles-screen" class="screen" aria-labelledby="tiles-title">
+    <div class="stack center" style="max-width:34rem">
+      <div class="topbar">
+        <button class="logo" type="button" data-logo-tap aria-label="clar">clar·</button>
+      </div>
+      <div>
+        <h1 id="tiles-title" class="title">Deine clar·Apps</h1>
+      </div>
+      <div id="tiles" class="tiles" aria-live="polite"></div>
+      <div id="sub-actions" class="subscription-actions" aria-label="Abo Optionen"></div>
+      <nav class="legal-links" aria-label="Rechtliches">
+        <a href="https://blog.lautini.ch/datenschutz" target="_blank" rel="noopener">Datenschutz</a>
+        <span>·</span>
+        <a href="https://blog.lautini.ch/agb" target="_blank" rel="noopener">AGB</a>
+        <span>·</span>
+        <a href="https://www.iubenda.com/privacy-policy/44495718/cookie-policy" target="_blank" rel="noopener">Cookie-Richtlinie</a>
+        <span>·</span>
+        <a href="https://blog.lautini.ch/impressum" target="_blank" rel="noopener">Impressum</a>
+        <span>·</span>
+        <a href="#" id="open-consent-edit">E-Mail-Einstellungen</a>
+      </nav>
+    </div>
+  </section>
+
+  <section id="paywall-screen" class="screen paywall-screen" aria-labelledby="paywall-title">
+    <div class="paywall-shell">
+      <header class="paywall-header">
+        <div>
+          <h1 id="paywall-title" class="title">clar·Apps abonnieren</h1>
+          <p class="copy">Wähle dein Abo. Der Kauf erfolgt sicher über deinen Apple-Account.</p>
+        </div>
+        <button id="close-paywall" class="paywall-close" type="button" aria-label="Schliessen">x</button>
+      </header>
+
+      <div class="billing-toggle" aria-label="Abrechnung">
+        <button type="button" data-billing-option="monthly" aria-pressed="false">Monatlich</button>
+        <button type="button" data-billing-option="yearly" aria-pressed="true">Jährlich <span class="recommended-badge">empfohlen</span></button>
+      </div>
+
+      <div class="plan-grid" role="radiogroup" aria-label="Abo auswählen">
+        <button class="plan-card" type="button" data-plan-option="one" role="radio" aria-checked="false">
+          <span class="plan-copy">
+            <span class="plan-name">1 App</span>
+            <span class="plan-note">Für eine clar App deiner Wahl.</span>
+          </span>
+          <span class="plan-price" data-plan-price="one">CHF 39/Jahr</span>
+        </button>
+        <button class="plan-card selected" type="button" data-plan-option="two" role="radio" aria-checked="true">
+          <span class="plan-copy">
+            <span class="plan-name">2 Apps <span class="plan-badge">beliebt</span></span>
+            <span class="plan-note">Kombiniere zwei aktive clar Apps.</span>
+          </span>
+          <span class="plan-price" data-plan-price="two">CHF 59/Jahr</span>
+        </button>
+        <button class="plan-card" type="button" data-plan-option="all" role="radio" aria-checked="false">
+          <span class="plan-copy">
+            <span class="plan-name">Alle Apps</span>
+            <span class="plan-note">Alles freischalten, auch kommende Apps.</span>
+          </span>
+          <span class="plan-price" data-plan-price="all">CHF 89/Jahr</span>
+        </button>
+      </div>
+
+      <section id="app-selection" class="app-selection" aria-labelledby="app-selection-title">
+        <div>
+          <h2 id="app-selection-title" class="title">App-Auswahl</h2>
+          <p id="app-selection-help" class="copy">Wähle genau 2 Apps.</p>
+        </div>
+        <div class="app-options">
+          <label class="app-choice" data-app-choice="markt">
+            <input type="checkbox" value="markt" data-app-checkbox>
+            <span class="app-choice-text">
+              <span class="app-choice-title">clar·markt</span>
+              <span class="app-choice-desc">Einkaufsplanung</span>
+            </span>
+          </label>
+          <label class="app-choice" data-app-choice="heim">
+            <input type="checkbox" value="heim" data-app-checkbox>
+            <span class="app-choice-text">
+              <span class="app-choice-title">clar·heim</span>
+              <span class="app-choice-desc">Haushaltsorganisation</span>
+            </span>
+          </label>
+          <label class="app-choice app-coming-soon" data-app-choice="log">
+            <input type="checkbox" value="log" data-app-checkbox disabled>
+            <span class="app-choice-text">
+              <span class="app-choice-title">clar·log <span class="coming-soon-badge">bald verfügbar</span></span>
+              <span class="app-choice-desc">Stimulanzien-Tagebuch</span>
+            </span>
+          </label>
+          <label class="app-choice" data-app-choice="tag">
+            <input type="checkbox" value="tag" data-app-checkbox>
+            <span class="app-choice-text">
+              <span class="app-choice-title">clar·tag</span>
+              <span class="app-choice-desc">Tagesstruktur & Routinen</span>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <button id="checkout-submit" class="paywall-submit" type="button" disabled>Abonnieren</button>
+      <p id="paywall-status" class="status paywall-status" role="status"></p>
+    </div>
+  </section>
+</main>
+
+<div id="consent-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="consent-title">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2 id="consent-title" class="title">E-Mails von clar</h2>
+        <p class="copy">Möchtest du E-Mails von clar by Lautini erhalten? Du kannst diese Wahl jederzeit ändern.</p>
+      </div>
+      <button id="close-consent" class="close" type="button" aria-label="Schliessen" style="display:none">x</button>
+    </div>
+    <div class="consent-options" role="radiogroup" aria-label="E-Mail-Einwilligung">
+      <button class="consent-option" type="button" data-consent="always" role="radio" aria-checked="false">
+        <span class="consent-option-title">Ja, dauerhaft</span>
+        <span class="consent-option-desc">Ich möchte E-Mails von clar by Lautini erhalten — auch nach einer Aboperiode.</span>
+      </button>
+      <button class="consent-option" type="button" data-consent="subscription_only" role="radio" aria-checked="false">
+        <span class="consent-option-title">Ja, nur während Abo</span>
+        <span class="consent-option-desc">Ja, aber nur während ich ein clar-Angebot abonniert habe. Danach soll meine Adresse gelöscht werden.</span>
+      </button>
+      <button class="consent-option" type="button" data-consent="never" role="radio" aria-checked="false">
+        <span class="consent-option-title">Nein</span>
+        <span class="consent-option-desc">Ich möchte keine Marketing-E-Mails erhalten.</span>
+      </button>
+    </div>
+    <p class="consent-note">Transaktionsmails (Login, Rechnung, Account-Sicherheit) sind davon nicht betroffen — diese erhältst du immer.</p>
+    <button id="consent-submit" class="primary" type="button" disabled>Speichern</button>
+    <p id="consent-status" class="status" role="status"></p>
+  </div>
+</div>
+
+<div id="reviewer-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="reviewer-title">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2 id="reviewer-title" class="title">Reviewer-Zugang</h2>
+        <p class="copy">Login mit Email und Passwort.</p>
+      </div>
+      <button id="close-reviewer" class="close" type="button" aria-label="Schliessen">x</button>
+    </div>
+    <form id="reviewer-form" class="form">
+      <label class="field">
+        <span class="label">Email</span>
+        <input id="reviewer-email" class="input" type="email" autocomplete="email" required>
+      </label>
+      <label class="field">
+        <span class="label">Passwort</span>
+        <span class="input-row">
+          <input id="reviewer-password" class="input password-input" type="password" autocomplete="current-password" required>
+          <button class="eye-button" type="button" data-toggle-password="reviewer-password" aria-label="Passwort anzeigen">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke-width="1.8"/>
+            </svg>
+          </button>
+        </span>
+      </label>
+      <button id="reviewer-submit" class="primary" type="submit">Anmelden</button>
+      <p id="reviewer-status" class="status" role="status"></p>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://cgwpzpnklxphqxlixtva.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnd3B6cG5rbHhwaHF4bGl4dHZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwODcyNTcsImV4cCI6MjA5NDY2MzI1N30.t-VnUALdHsoNo9mJ6LV-lW4OntJLqHnF36SHb0rNP0c';
+const SESSION_STORAGE_KEY = 'clar.supabase.session';
+const SPLASH_MS = 1500;
+
+// ─── Despia Bridge ──────────────────────────────────────────────────────────
+// Der Wrapper injiziert eine globale despia()-Funktion. Ausserhalb des
+// Wrappers (Browser-Preview) fallen wir sauber ins Konsolen-Log.
+const despia = (url) => {
+  const fn = window.despia
+    || (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.despia
+        && ((u) => window.webkit.messageHandlers.despia.postMessage(u)));
+  if (typeof fn === 'function') {
+    try { fn(url); return true; } catch (err) { console.warn('[despia] call failed', err); }
+  }
+  console.info('[despia stub]', url);
+  return false;
+};
+
+// ─── RevenueCat / App Store — Produkt-Konstanten ─────────────────────────────
+// Diese IDs MÜSSEN identisch in App Store Connect und RevenueCat angelegt sein.
+// Bitte hier nichts ändern ohne parallele Änderung in beiden Konsolen.
+const PRODUCT_IDS = Object.freeze({
+  monthly: {
+    one: 'clar_1app_monthly',
+    two: 'clar_2apps_monthly',
+    all: 'clar_all_monthly'
+  },
+  yearly: {
+    one: 'clar_1app_yearly',
+    two: 'clar_2apps_yearly',
+    all: 'clar_all_yearly'
+  }
+});
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false
+  }
+});
+
+const apps = [
+  {
+    key: 'clarmarkt',
+    aliases: ['clarmarkt', 'clar·markt', 'clar.markt', 'clar-markt', 'markt'],
+    name: 'clar·markt',
+    description: 'Einkaufsplanung',
+    icon: '🛒',
+    color: '#C97B3A',
+    url: 'https://clar.markt.lautini.ch/app'
+  },
+  {
+    key: 'clarheim',
+    aliases: ['clarheim', 'clar·heim', 'clar.heim', 'clar-heim', 'heim'],
+    name: 'clar·heim',
+    description: 'Haushaltsorganisation',
+    icon: '🏠',
+    color: '#2E5C3E',
+    url: 'https://clar.heim.lautini.ch/heute'
+  },
+  {
+    key: 'clarlog',
+    aliases: ['clarlog', 'clar·log', 'clar.log', 'clar-log', 'log'],
+    name: 'clar·log',
+    description: 'Stimulanzien-Tagebuch beta',
+    icon: '📖',
+    color: '#5B7AAE',
+    url: 'https://clar.log.lautini.ch/heute'
+  },
+  {
+    key: 'clartag',
+    aliases: ['clartag', 'clar·tag', 'clar.tag', 'clar-tag', 'tag'],
+    name: 'clar·tag',
+    description: 'Tagesstruktur & Routinen',
+    icon: '🕐',
+    color: '#7A5BAE',
+    url: 'https://clar.tag.lautini.ch'
+  }
+];
+
+apps.forEach((app) => {
+  app.normalizedAliases = app.aliases.map(normalizeAppToken);
+});
+
+const planPrices = {
+  monthly: {
+    one: 'CHF 4.90/Mt',
+    two: 'CHF 8.90/Mt',
+    all: 'CHF 12.90/Mt'
+  },
+  yearly: {
+    one: 'CHF 39/Jahr',
+    two: 'CHF 59/Jahr',
+    all: 'CHF 89/Jahr'
+  }
+};
+
+const appOptions = [
+  { key: 'markt', available: true },
+  { key: 'heim', available: true },
+  { key: 'log', available: false },
+  { key: 'tag', available: true }
+];
+
+const screens = {
+  splash: document.querySelector('#splash-screen'),
+  login: document.querySelector('#login-screen'),
+  entitlement: document.querySelector('#entitlement-screen'),
+  tiles: document.querySelector('#tiles-screen'),
+  app: document.querySelector('#app-screen'),
+  paywall: document.querySelector('#paywall-screen')
+};
+
+const state = {
+  session: null,
+  subscriberApps: new Set(),   // Stripe-Web-Abo (Legacy: bleibt für User, die vor iOS über Web abgeschlossen haben)
+  groupApps: new Set(),
+  appleApps: new Set(),        // Apple-IAP-Abo
+  webSubActive: false,
+  appleSubActive: false,
+  entitlementLoadError: false,
+  activeGroupIds: [],
+  pushRegistered: false,
+  paywall: {
+    billing: 'yearly',
+    plan: 'two',
+    selectedApps: new Set(),
+    purchaseBusy: false
+  }
+};
+
+const byId = (id) => document.getElementById(id);
+
+let currentLoadedAppOrigin = null;
+
+function openApp(url) {
+  const iframe = byId('app-iframe');
+  const target = new URL(url);
+  const targetOrigin = target.origin + target.pathname.replace(/\/$/, '');
+
+  if (currentLoadedAppOrigin === targetOrigin && iframe.src && iframe.src !== '' && iframe.src !== 'about:blank') {
+    showScreen('app');
+    return;
+  }
+
+  currentLoadedAppOrigin = targetOrigin;
+  iframe.src = url;
+  showScreen('app');
+}
+
+document.getElementById('close-app-btn').addEventListener('click', closeApp);
+
+function closeApp() {
+  showScreen('tiles');
+}
+
+window.addEventListener('message', (e) => {
+  let type = null;
+  if (e.data && typeof e.data === 'object') type = e.data.type;
+  if (typeof e.data === 'string') {
+    try { type = JSON.parse(e.data).type; } catch {}
+  }
+  if (type !== 'clar_request_session' && type !== 'clar:needs-session') return;
+  if (!state.session?.access_token || !state.session?.refresh_token) return;
+  const iframe = byId('app-iframe');
+  if (!iframe || !iframe.contentWindow) return;
+  const tokens = {
+    access_token: state.session.access_token,
+    refresh_token: state.session.refresh_token,
+  };
+  iframe.contentWindow.postMessage({ type: 'clar_session', ...tokens }, '*');
+  iframe.contentWindow.postMessage(JSON.stringify({ type: 'clar:session', ...tokens }), '*');
+});
+
+const delay = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+function showScreen(name) {
+  Object.values(screens).forEach((screen) => screen.classList.remove('active'));
+  screens[name].classList.add('active');
+}
+
+function setStatus(id, message = '', isError = false) {
+  const element = byId(id);
+  element.textContent = message;
+  element.classList.toggle('error', isError);
+}
+
+function setBusy(button, busy, busyText) {
+  if (!button) return;
+  if (busy) {
+    button.dataset.label = button.textContent;
+    button.textContent = busyText;
+    button.disabled = true;
+  } else {
+    button.textContent = button.dataset.label || button.textContent;
+    button.disabled = false;
+  }
+}
+
+// ─── Offline-Handling ────────────────────────────────────────────────────────
+function updateOnlineState() {
+  const online = navigator.onLine !== false;
+  document.body.classList.toggle('offline', !online);
+  byId('offline-banner').classList.toggle('active', !online);
+}
+
+// ─── Push-Registrierung ──────────────────────────────────────────────────────
+function registerPushIfNeeded() {
+  if (state.pushRegistered) return;
+  if (!state.session?.user?.id) return;
+  despia(`push://register?external_id=${encodeURIComponent(state.session.user.id)}`);
+  state.pushRegistered = true;
+}
+
+function openPaywall() {
+  // Aktives Web-Abo: Apple lässt keinen Doppelkauf zu. Wir erklären das
+  // im Paywall-Status und deaktivieren den Kauf-Button.
+  if (state.appleSubActive) {
+    despia('itms-apps://apps.apple.com/account/subscriptions');
+    return;
+  }
+  if (state.webSubActive) {
+    setStatus('paywall-status', 'Dein Abo läuft bereits über clar (Web-Konto). In der App kann kein zusätzliches Abo abgeschlossen werden.', false);
+  } else {
+    setStatus('paywall-status');
+  }
+  renderPaywall();
+  showScreen('paywall');
+  byId('close-paywall').focus();
+}
+
+function closePaywall() {
+  setStatus('paywall-status');
+  state.paywall.purchaseBusy = false;
+  showScreen('tiles');
+}
+
+function renderPaywall() {
+  document.querySelectorAll('[data-billing-option]').forEach((button) => {
+    const isActive = button.dataset.billingOption === state.paywall.billing;
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-pressed', String(isActive));
+  });
+
+  document.querySelectorAll('[data-plan-option]').forEach((button) => {
+    const plan = button.dataset.planOption;
+    const isSelected = plan === state.paywall.plan;
+    button.classList.toggle('selected', isSelected);
+    button.setAttribute('aria-checked', String(isSelected));
+  });
+
+  Object.entries(planPrices[state.paywall.billing]).forEach(([plan, price]) => {
+    const priceElement = document.querySelector(`[data-plan-price="${plan}"]`);
+    if (priceElement) priceElement.textContent = price;
+  });
+
+  renderAppSelection();
+  updatePurchaseButton();
+}
+
+function renderAppSelection() {
+  const requiredApps = getRequiredAppCount();
+  const appSelection = byId('app-selection');
+  appSelection.classList.toggle('hidden', requiredApps === 0);
+
+  if (requiredApps === 0) return;
+
+  byId('app-selection-help').textContent = requiredApps === 1
+    ? 'Wähle genau 1 App.'
+    : 'Wähle genau 2 Apps.';
+
+  const selectedCount = getSelectedCheckoutApps().length;
+  const selectionFull = selectedCount >= requiredApps;
+
+  appOptions.forEach((option) => {
+    const checkbox = document.querySelector(`[data-app-checkbox][value="${option.key}"]`);
+    const choice = document.querySelector(`[data-app-choice="${option.key}"]`);
+    const isSelected = option.available && state.paywall.selectedApps.has(option.key);
+    const isDisabled = !option.available || (selectionFull && !isSelected);
+
+    checkbox.checked = isSelected;
+    checkbox.disabled = isDisabled;
+    choice.classList.toggle('disabled', isDisabled);
+    choice.setAttribute('aria-disabled', String(isDisabled));
+  });
+}
+
+function updatePurchaseButton() {
+  const button = byId('checkout-submit');
+  const blocked = state.webSubActive;
+  button.disabled = blocked || state.paywall.purchaseBusy || !isPaywallSelectionComplete();
+  if (blocked) {
+    button.textContent = 'Abo bereits aktiv (Web)';
+  } else if (state.paywall.purchaseBusy) {
+    button.textContent = 'App Store wird geöffnet…';
+  } else {
+    button.textContent = 'Abonnieren';
+  }
+}
+
+function setBillingInterval(billing) {
+  state.paywall.billing = billing;
+  renderPaywall();
+}
+
+function selectPlan(plan) {
+  state.paywall.plan = plan;
+  limitSelectedApps();
+  setStatus('paywall-status');
+  renderPaywall();
+}
+
+function toggleCheckoutApp(appKey, checked) {
+  const requiredApps = getRequiredAppCount();
+  const isAvailable = isCheckoutAppAvailable(appKey);
+
+  if (!isAvailable || requiredApps === 0) {
+    state.paywall.selectedApps.delete(appKey);
+    setStatus('paywall-status');
+    renderPaywall();
+    return;
+  }
+
+  if (checked) {
+    if (getSelectedCheckoutApps().length >= requiredApps) return;
+    state.paywall.selectedApps.add(appKey);
+  } else {
+    state.paywall.selectedApps.delete(appKey);
+  }
+
+  setStatus('paywall-status');
+  renderPaywall();
+}
+
+function limitSelectedApps() {
+  const requiredApps = getRequiredAppCount();
+
+  if (requiredApps === 0) {
+    state.paywall.selectedApps.clear();
+    return;
+  }
+
+  state.paywall.selectedApps.forEach((appKey) => {
+    if (!isCheckoutAppAvailable(appKey)) state.paywall.selectedApps.delete(appKey);
+  });
+
+  while (getSelectedCheckoutApps().length > requiredApps) {
+    const lastSelected = [...state.paywall.selectedApps].at(-1);
+    state.paywall.selectedApps.delete(lastSelected);
+  }
+}
+
+function getRequiredAppCount() {
+  if (state.paywall.plan === 'one') return 1;
+  if (state.paywall.plan === 'two') return 2;
+  return 0;
+}
+
+function isPaywallSelectionComplete() {
+  const requiredApps = getRequiredAppCount();
+  return requiredApps === 0 || getSelectedCheckoutApps().length === requiredApps;
+}
+
+function getSelectedCheckoutApps() {
+  if (state.paywall.plan === 'all') return ['all'];
+  return [...state.paywall.selectedApps].filter(isCheckoutAppAvailable);
+}
+
+function isCheckoutAppAvailable(appKey) {
+  return appOptions.some((option) => option.key === appKey && option.available);
+}
+
+// ─── Kauf via Despia → RevenueCat ────────────────────────────────────────────
+async function startPurchase() {
+  if (!state.session?.user?.id) {
+    setStatus('paywall-status', 'Bitte melde dich an, um fortzufahren.', true);
+    showScreen('login');
+    return;
+  }
+
+  if (state.webSubActive) {
+    setStatus('paywall-status', 'Dein Web-Abo ist bereits aktiv — verwalte es über clar (Web-Konto).', true);
+    return;
+  }
+
+  if (!isPaywallSelectionComplete()) {
+    setStatus('paywall-status', 'Bitte vervollständige deine Auswahl.', true);
+    return;
+  }
+
+  const { billing, plan } = state.paywall;
+  const productId = PRODUCT_IDS[billing]?.[plan];
+  if (!productId) {
+    setStatus('paywall-status', 'Für diese Auswahl ist kein Produkt hinterlegt.', true);
+    return;
+  }
+
+  // App-Auswahl (1/2-App-Abos) speichern, damit der Webhook nach Kauf-Bestätigung
+  // die richtige selected_apps setzen kann. Best-Effort — nicht kritisch.
+  const selectedApps = getSelectedCheckoutApps();
+  try {
+    await supabase
+      .from('apple_subscription_intents')
+      .upsert({
+        user_id: state.session.user.id,
+        product_id: productId,
+        selected_apps: selectedApps,
+        created_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+  } catch (err) {
+    console.warn('[intent] upsert failed', err);
+  }
+
+  state.paywall.purchaseBusy = true;
+  setStatus('paywall-status', 'App Store wird geöffnet…');
+  renderPaywall();
+
+  // Bridge-Aufruf: der Wrapper öffnet Apples native Kauf-UI via RevenueCat.
+  // Alternative Variante des Wrappers: revenuecat://launchPaywall?offering=default
+  const purchaseUrl =
+    `revenuecat://purchase?external_id=${encodeURIComponent(state.session.user.id)}` +
+    `&product=${encodeURIComponent(productId)}`;
+  const invoked = despia(purchaseUrl);
+
+  if (!invoked) {
+    // Ausserhalb des Wrappers (Browser) — kein Kauf möglich.
+    state.paywall.purchaseBusy = false;
+    setStatus('paywall-status', 'Der Kauf ist nur in der clar-App im App Store möglich.', true);
+    renderPaywall();
+    return;
+  }
+
+  // Kauf-Abschluss läuft asynchron via Webhook. Kurz auf Aktivierung pollen.
+  await pollForAppleActivation(20000);
+  state.paywall.purchaseBusy = false;
+  await loadAccess();
+  renderSubscriptionActions();
+  renderTiles();
+  if (state.appleSubActive) {
+    closePaywall();
+  } else {
+    renderPaywall();
+  }
+}
+
+async function pollForAppleActivation(timeoutMs) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    await delay(2000);
+    await loadAccess();
+    if (state.appleSubActive) return true;
+  }
+  return false;
+}
+
+// ─── E-Mail-Einwilligung ─────────────────────────────────────────────────────
+async function getEmailConsent(userId) {
+  if (!userId) return null;
+  const { data, error } = await supabase
+    .schema('public')
+    .from('email_consent')
+    .select('user_id, consent_level, consented_at, consent_version, updated_at')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) {
+    console.warn('[email-consent] read failed', error);
+    return null;
+  }
+  return data ?? null;
+}
+
+async function setEmailConsent(userId, level) {
+  if (!userId) return { ok: false, error: 'no user' };
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .schema('public')
+    .from('email_consent')
+    .upsert(
+      { user_id: userId, consent_level: level, consented_at: now, updated_at: now },
+      { onConflict: 'user_id' },
+    );
+  if (error) return { ok: false, error: error.message };
+  try {
+    await supabase.schema('public').from('audit_log').insert({
+      user_id: userId,
+      action: 'email_consent_set',
+      details: { consent_level: level, source: 'app.lautini.ch' },
+    });
+  } catch (e) {
+    console.warn('[email-consent] audit_log insert failed', e);
+  }
+  return { ok: true };
+}
+
+let _consentSelected = null;
+let _consentResolve = null;
+
+function openConsentModal({ allowClose = false } = {}) {
+  _consentSelected = null;
+  document.querySelectorAll('.consent-option').forEach((b) => {
+    b.classList.remove('selected');
+    b.setAttribute('aria-checked', 'false');
+  });
+  const submit = byId('consent-submit');
+  if (submit) submit.disabled = true;
+  setStatus('consent-status');
+  const closeBtn = byId('close-consent');
+  if (closeBtn) closeBtn.style.display = allowClose ? '' : 'none';
+  byId('consent-modal').classList.add('active');
+  return new Promise((resolve) => {
+    _consentResolve = resolve;
+  });
+}
+
+function closeConsentModal(value) {
+  byId('consent-modal').classList.remove('active');
+  if (_consentResolve) {
+    const r = _consentResolve;
+    _consentResolve = null;
+    r(value ?? null);
+  }
+}
+
+async function ensureEmailConsent() {
+  const userId = state.session?.user?.id;
+  if (!userId) return;
+  const row = await getEmailConsent(userId);
+  if (row?.consent_level) return;
+  await openConsentModal({ allowClose: false });
+}
+
+async function initialRoute() {
+  await restoreStoredSession();
+  await delay(SPLASH_MS);
+  await loadAccess();
+  if (state.session) {
+    await ensureEmailConsent();
+    registerPushIfNeeded();
+  }
+  renderTiles();
+  renderSubscriptionActions();
+  showScreen('tiles');
+}
+
+async function routeAfterLogin() {
+  if (!state.session) {
+    showScreen('login');
+    return;
+  }
+  await loadAccess();
+  await ensureEmailConsent();
+  registerPushIfNeeded();
+  renderTiles();
+  renderSubscriptionActions();
+  showScreen('tiles');
+}
+
+async function restoreStoredSession() {
+  const storedSession = readStoredSession();
+
+  if (storedSession?.access_token && storedSession?.refresh_token) {
+    const { data, error } = await supabase.auth.setSession({
+      access_token: storedSession.access_token,
+      refresh_token: storedSession.refresh_token
+    });
+
+    if (!error && data.session) {
+      state.session = data.session;
+      storeSession(data.session);
+      return data.session;
+    }
+
+    clearStoredSession();
+  }
+
+  const { data } = await supabase.auth.getSession();
+  state.session = data.session;
+  if (data.session) storeSession(data.session);
+  return data.session;
+}
+
+async function signIn(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  if (!data.session) throw new Error('Keine Supabase-Session erhalten.');
+  state.session = data.session;
+  storeSession(data.session);
+  return data.session;
+}
+
+function readStoredSession() {
+  try {
+    return JSON.parse(window.localStorage.getItem(SESSION_STORAGE_KEY) || 'null');
+  } catch (_error) {
+    return null;
+  }
+}
+
+function storeSession(session) {
+  if (!session) return;
+  try {
+    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  } catch (_error) { /* ignore */ }
+}
+
+function clearStoredSession() {
+  try {
+    window.localStorage.removeItem(SESSION_STORAGE_KEY);
+  } catch (_error) { /* ignore */ }
+}
+
+async function loadAccess() {
+  state.subscriberApps = new Set();
+  state.groupApps = new Set();
+  state.appleApps = new Set();
+  state.webSubActive = false;
+  state.appleSubActive = false;
+  state.activeGroupIds = [];
+  state.entitlementLoadError = false;
+
+  if (!state.session?.user?.id) return;
+
+  try {
+    const userId = state.session.user.id;
+    const [subscribersResult, groupMembersResult, appleResult] = await Promise.all([
+      supabase
+        .from('subscribers')
+        .select('app, subscribed')
+        .eq('user_id', userId)
+        .eq('subscribed', true),
+      supabase
+        .from('group_members')
+        .select('group_id, status')
+        .eq('user_id', userId)
+        .eq('status', 'active'),
+      // Neue Tabelle — kann fehlen bevor die Migration eingespielt wurde.
+      supabase
+        .from('apple_subscriptions')
+        .select('entitlement, status, expires_at, selected_apps')
+        .eq('user_id', userId)
+    ]);
+
+    if (subscribersResult.error) throw subscribersResult.error;
+    if (groupMembersResult.error) throw groupMembersResult.error;
+    // apple_subscriptions-Fehler nicht als fatal behandeln.
+    if (appleResult.error) {
+      console.warn('[apple-subs] read failed', appleResult.error.message);
+    }
+
+    state.subscriberApps = new Set(
+      (subscribersResult.data || [])
+        .map((row) => appKeyFromValue(row.app))
+        .filter(Boolean)
+    );
+    state.webSubActive = state.subscriberApps.size > 0;
+
+    state.activeGroupIds = (groupMembersResult.data || [])
+      .filter((row) => row.status === 'active' && row.group_id)
+      .map((row) => row.group_id);
+
+    if (state.activeGroupIds.length) {
+      await loadGroupApps(state.activeGroupIds);
+    }
+
+    // Apple-Entitlements auswerten
+    const nowIso = new Date().toISOString();
+    const activeAppleRows = (appleResult.data || []).filter((row) => {
+      if (!row) return false;
+      const isActive = row.status === 'active' || row.status === 'in_grace_period';
+      const notExpired = !row.expires_at || row.expires_at > nowIso;
+      return isActive && notExpired;
+    });
+    state.appleSubActive = activeAppleRows.length > 0;
+    activeAppleRows.forEach((row) => {
+      const ent = String(row.entitlement || '').toLowerCase();
+      if (ent === 'all') {
+        state.appleApps.add('all');
+      } else if (Array.isArray(row.selected_apps)) {
+        row.selected_apps.forEach((k) => {
+          const appKey = appKeyFromValue(k);
+          if (appKey) state.appleApps.add(appKey);
+        });
+      } else {
+        const appKey = appKeyFromValue(ent);
+        if (appKey) state.appleApps.add(appKey);
+      }
+    });
+  } catch (_error) {
+    state.entitlementLoadError = true;
+  }
+}
+
+async function loadGroupApps(groupIds) {
+  const uniqueGroupIds = [...new Set(groupIds)];
+  const { data, error } = await supabase
+    .from('groups')
+    .select('*')
+    .in('id', uniqueGroupIds);
+
+  if (error) throw error;
+
+  (data || []).forEach((group) => {
+    extractAppsFromGroup(group).forEach((appKey) => state.groupApps.add(appKey));
+  });
+}
+
+function extractAppsFromGroup(group) {
+  const appKeys = new Set();
+  Object.entries(group || {}).forEach(([field, value]) => {
+    if (value === true) {
+      const keyFromField = appKeyFromValue(field);
+      if (keyFromField) appKeys.add(keyFromField);
+      return;
+    }
+    collectAppValues(value).forEach((candidate) => {
+      const appKey = appKeyFromValue(candidate);
+      if (appKey) appKeys.add(appKey);
+    });
+  });
+  return appKeys;
+}
+
+function collectAppValues(value) {
+  if (value == null || typeof value === 'boolean' || typeof value === 'number') return [];
+  if (Array.isArray(value)) return value.flatMap(collectAppValues);
+  if (typeof value === 'object') {
+    const values = [];
+    Object.entries(value).forEach(([field, nestedValue]) => {
+      if (nestedValue === true) values.push(field);
+      values.push(...collectAppValues(nestedValue));
+    });
+    return values;
+  }
+  const text = String(value).trim();
+  if (!text) return [];
+  if ((text.startsWith('[') && text.endsWith(']')) || (text.startsWith('{') && text.endsWith('}'))) {
+    try { return collectAppValues(JSON.parse(text)); } catch (_error) { return [text]; }
+  }
+  return text.split(/[,;|]+/).map((item) => item.trim()).filter(Boolean);
+}
+
+function renderTiles() {
+  const tiles = byId('tiles');
+  tiles.textContent = '';
+  apps.forEach((app) => tiles.appendChild(createTile(app)));
+}
+
+function createTile(app) {
+  const hasAccess = hasAppAccess(app);
+  const isComingSoon = app.key === 'clarlog' && !hasAccess;
+  const isLocked = !hasAccess;
+  const tile = document.createElement('div');
+  tile.className = `tile${isLocked ? ' locked' : ''}`;
+
+  if (isComingSoon) {
+    tile.style.opacity = '.5';
+    tile.style.cursor = 'default';
+  } else if (hasAccess && app.url) {
+    tile.addEventListener('click', (e) => {
+      e.preventDefault();
+      openApp(withSessionTokens(app.url));
+    });
+    tile.style.cursor = 'pointer';
+  } else if (isLocked) {
+    tile.style.cursor = 'pointer';
+    tile.addEventListener('click', () => openPaywall());
+  }
+
+  const body = document.createElement('div');
+  const icon = document.createElement('div');
+  const text = document.createElement('div');
+  const name = document.createElement('div');
+  const desc = document.createElement('div');
+  body.className = 'tile-body';
+  icon.className = 'tile-icon';
+  icon.style.backgroundColor = `${app.color}20`;
+  icon.textContent = app.icon;
+  text.className = 'tile-text';
+  name.className = 'tile-name';
+  desc.className = 'tile-desc';
+  name.textContent = app.name;
+  desc.textContent = app.description;
+
+  if (isComingSoon) {
+    const badge = document.createElement('span');
+    badge.className = 'coming-soon-badge';
+    badge.style.fontSize = '.7rem';
+    badge.style.marginLeft = '.4rem';
+    badge.textContent = 'bald verfügbar';
+    name.appendChild(badge);
+  }
+
+  text.append(name, desc);
+  body.append(icon, text);
+
+  const action = document.createElement('div');
+  action.className = 'tile-action';
+  action.appendChild(createActionText(isLocked ? '🔒' : '›'));
+  tile.append(body, action);
+  return tile;
+}
+
+function createActionText(text, className = '') {
+  const element = document.createElement('span');
+  if (className) element.className = className;
+  element.textContent = text;
+  return element;
+}
+
+function hasAppAccess(app) {
+  return state.subscriberApps.has('all')
+    || state.groupApps.has('all')
+    || state.appleApps.has('all')
+    || state.subscriberApps.has(app.key)
+    || state.groupApps.has(app.key)
+    || state.appleApps.has(app.key);
+}
+
+function appKeyFromValue(value) {
+  const normalized = normalizeAppToken(value);
+  if (!normalized) return '';
+  if (['all', 'premium', 'pro'].includes(normalized)) return 'all';
+  const match = apps.find((app) => (
+    app.normalizedAliases.some((alias) => normalized === alias || normalized.includes(alias) || alias.includes(normalized))
+  ));
+  return match?.key || '';
+}
+
+function normalizeAppToken(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function withSessionTokens(url) {
+  const target = new URL(url);
+  target.searchParams.set('clar_embedded', '1');
+  if (state.session?.access_token && state.session?.refresh_token) {
+    target.hash = 'access_token=' + encodeURIComponent(state.session.access_token) + '&refresh_token=' + encodeURIComponent(state.session.refresh_token) + '&type=clar_sso';
+  }
+  return target.toString();
+}
+
+// ─── Abo-Verwaltung / Aktions-Bar ────────────────────────────────────────────
+function renderSubscriptionActions() {
+  const host = byId('sub-actions');
+  host.textContent = '';
+  host.className = 'subscription-actions';
+
+  const loggedIn = !!state.session;
+
+  const appendStatus = (message) => {
+    const box = document.createElement('div');
+    box.className = 'subscription-status';
+    box.innerHTML = message;
+    host.append(box);
+  };
+
+  // Priorität 1: aktives Web-Abo (Stripe) — kein Apple-Kauf mehr möglich.
+  if (loggedIn && state.webSubActive) {
+    appendStatus('<strong>Abo aktiv</strong><br>Über deinen clar-Web-Account abgeschlossen.');
+    host.append(makeAuthButton());
+    return;
+  }
+
+  // Priorität 2: aktives Apple-Abo — Verwalten via App Store.
+  if (loggedIn && state.appleSubActive) {
+    const manage = document.createElement('button');
+    manage.type = 'button';
+    manage.className = 'billing-button';
+    manage.textContent = 'Abo verwalten (App Store)';
+    manage.addEventListener('click', () => despia('itms-apps://apps.apple.com/account/subscriptions'));
+    host.append(manage);
+    host.append(makeAuthButton());
+    return;
+  }
+
+  // Sonst: Paywall anbieten.
+  const openBtn = document.createElement('button');
+  openBtn.type = 'button';
+  openBtn.className = 'billing-button';
+  openBtn.textContent = 'Abo abschliessen';
+  openBtn.addEventListener('click', openPaywall);
+  host.append(openBtn);
+  host.append(makeAuthButton());
+}
+
+function makeAuthButton() {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'billing-button';
+  btn.id = 'open-login';
+  btn.textContent = state.session ? 'Abmelden' : 'Anmelden';
+  btn.addEventListener('click', async () => {
+    if (state.session) {
+      await supabase.auth.signOut();
+      state.session = null;
+      state.pushRegistered = false;
+      clearStoredSession();
+      await loadAccess();
+      renderTiles();
+      renderSubscriptionActions();
+    } else {
+      showScreen('login');
+    }
+  });
+  return btn;
+}
+
+function openReviewerModal() {
+  byId('reviewer-email').value = '';
+  byId('reviewer-password').value = '';
+  byId('reviewer-modal').classList.add('active');
+  byId('reviewer-email').focus();
+}
+
+function closeReviewerModal() {
+  byId('reviewer-modal').classList.remove('active');
+  setStatus('reviewer-status');
+}
+
+function wireEvents() {
+  let logoTaps = 0;
+  let logoTimer = null;
+
+  document.querySelectorAll('[data-logo-tap]').forEach((logo) => {
+    logo.addEventListener('click', () => {
+      logoTaps += 1;
+      window.clearTimeout(logoTimer);
+      logoTimer = window.setTimeout(() => { logoTaps = 0; }, 1800);
+      if (logoTaps >= 5) { logoTaps = 0; openReviewerModal(); }
+    });
+  });
+
+  document.querySelectorAll('[data-toggle-password]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const input = byId(button.dataset.togglePassword);
+      const visible = input.type === 'text';
+      input.type = visible ? 'password' : 'text';
+      button.setAttribute('aria-label', visible ? 'Passwort anzeigen' : 'Passwort verbergen');
+    });
+  });
+
+  byId('close-reviewer').addEventListener('click', closeReviewerModal);
+  byId('reviewer-modal').addEventListener('click', (event) => {
+    if (event.target.id === 'reviewer-modal') closeReviewerModal();
+  });
+
+  document.querySelectorAll('.consent-option').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      _consentSelected = btn.dataset.consent;
+      document.querySelectorAll('.consent-option').forEach((b) => {
+        const on = b === btn;
+        b.classList.toggle('selected', on);
+        b.setAttribute('aria-checked', String(on));
+      });
+      byId('consent-submit').disabled = false;
+    });
+  });
+  byId('consent-submit').addEventListener('click', async () => {
+    if (!_consentSelected) return;
+    const userId = state.session?.user?.id;
+    if (!userId) { closeConsentModal(null); return; }
+    const submit = byId('consent-submit');
+    submit.disabled = true;
+    setStatus('consent-status', 'Wird gespeichert…');
+    const res = await setEmailConsent(userId, _consentSelected);
+    if (!res.ok) {
+      setStatus('consent-status', res.error || 'Speichern fehlgeschlagen.', true);
+      submit.disabled = false;
+      return;
+    }
+    closeConsentModal(_consentSelected);
+  });
+  byId('close-consent').addEventListener('click', () => closeConsentModal(null));
+  byId('consent-modal').addEventListener('click', (event) => {
+    if (event.target.id === 'consent-modal' && byId('close-consent').style.display !== 'none') {
+      closeConsentModal(null);
+    }
+  });
+  byId('open-consent-edit').addEventListener('click', async (event) => {
+    event.preventDefault();
+    if (!state.session?.user?.id) return;
+    await openConsentModal({ allowClose: true });
+  });
+
+  byId('close-paywall').addEventListener('click', closePaywall);
+
+  document.querySelectorAll('[data-billing-option]').forEach((button) => {
+    button.addEventListener('click', () => setBillingInterval(button.dataset.billingOption));
+  });
+
+  document.querySelectorAll('[data-plan-option]').forEach((button) => {
+    button.addEventListener('click', () => selectPlan(button.dataset.planOption));
+  });
+
+  document.querySelectorAll('[data-app-checkbox]').forEach((checkbox) => {
+    checkbox.addEventListener('change', () => toggleCheckoutApp(checkbox.value, checkbox.checked));
+  });
+
+  byId('checkout-submit').addEventListener('click', startPurchase);
+
+  byId('register-submit').addEventListener('click', async () => {
+    const button = byId('register-submit');
+    const confirmField = byId('confirm-field');
+    const confirmInput = byId('auth-password-confirm');
+    setStatus('auth-status', '');
+    const email = byId('auth-email').value.trim();
+    const password = byId('auth-password').value;
+    if (!email || !password) { setStatus('auth-status', 'Bitte Email und Passwort eingeben.', true); return; }
+
+    if (confirmField.style.display === 'none') {
+      confirmField.style.display = 'flex';
+      confirmInput.required = true;
+      confirmInput.focus();
+      return;
+    }
+
+    if (password !== confirmInput.value) {
+      setStatus('auth-status', 'Passwörter stimmen nicht überein.', true);
+      confirmInput.focus();
+      return;
+    }
+
+    setBusy(button, true, 'Erstellen...');
+    try {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+      if (loginError) throw loginError;
+      state.session = loginData.session;
+      await routeAfterLogin();
+    } catch (err) {
+      setStatus('auth-status', err.message || 'Registrierung fehlgeschlagen.', true);
+    } finally {
+      setBusy(button, false, 'Konto erstellen');
+    }
+  });
+
+  byId('auth-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = byId('login-submit');
+    setBusy(button, true, 'Anmelden...');
+    setStatus('auth-status');
+
+    try {
+      await signIn(byId('auth-email').value.trim(), byId('auth-password').value);
+      await routeAfterLogin();
+    } catch (error) {
+      setStatus('auth-status', error.message || 'Anmeldung fehlgeschlagen.', true);
+    } finally {
+      setBusy(button, false, 'Anmelden');
+    }
+  });
+
+  byId('reviewer-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = byId('reviewer-submit');
+    setBusy(button, true, 'Anmelden...');
+    setStatus('reviewer-status');
+    try {
+      await signIn(byId('reviewer-email').value.trim(), byId('reviewer-password').value);
+      closeReviewerModal();
+      await routeAfterLogin();
+    } catch (error) {
+      setStatus('reviewer-status', error.message || 'Reviewer-Anmeldung fehlgeschlagen.', true);
+    } finally {
+      setBusy(button, false);
+    }
+  });
+
+  supabase.auth.onAuthStateChange((_event, session) => {
+    state.session = session;
+    if (session) {
+      storeSession(session);
+      registerPushIfNeeded();
+    } else {
+      state.pushRegistered = false;
+      clearStoredSession();
+    }
+  });
+
+  // Offline-Erkennung
+  window.addEventListener('online', updateOnlineState);
+  window.addEventListener('offline', updateOnlineState);
+  updateOnlineState();
+
+  // Rückkehr aus dem App Store: Abo-Status frisch laden.
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible') return;
+    if (!state.session?.user?.id) return;
+    await loadAccess();
+    renderTiles();
+    renderSubscriptionActions();
+  });
+}
+
+wireEvents();
+initialRoute();
+</script>
+</body>
+</html>
