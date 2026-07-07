@@ -98,6 +98,8 @@ button:disabled{cursor:not-allowed;opacity:.58;}
 .paywall-submit{width:100%;min-height:3.25rem;border:0;border-radius:14px;background:var(--green);color:var(--paper);font-weight:800;}
 .paywall-submit:disabled{background:var(--line);color:var(--muted);box-shadow:none;}
 .paywall-status{min-height:1.25rem;text-align:center;}
+.paywall-legal{margin:.25rem auto 0;max-width:34rem;text-align:center;font-size:.72rem;line-height:1.45;color:var(--muted);}
+.paywall-legal a{color:var(--green);text-decoration:underline;}
 .modal-backdrop{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(28,46,28,.38);padding:1.25rem;}
 .modal-backdrop.active{display:flex;}
 .modal{width:100%;max-width:23rem;border-radius:1.35rem;background:var(--paper);padding:1.2rem;box-shadow:0 1.5rem 4rem rgba(28,46,28,.24);}
@@ -338,6 +340,13 @@ body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
 
       <button id="checkout-submit" class="paywall-submit" type="button" disabled>Abonnieren</button>
       <p id="paywall-status" class="status paywall-status" role="status"></p>
+      <p class="paywall-legal">
+        Zahlung über deinen Apple-Account. Das gewählte Abo verlängert sich automatisch um denselben Zeitraum zum angezeigten Preis, sofern es nicht mindestens 24&nbsp;Stunden vor Ablauf gekündigt wird. Verwaltung &amp; Kündigung jederzeit in den Apple-ID-Einstellungen.
+        <br>
+        <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noopener">Nutzungsbedingungen (EULA)</a>
+        &nbsp;·&nbsp;
+        <a href="https://blog.lautini.ch/datenschutz" target="_blank" rel="noopener">Datenschutz</a>
+      </p>
     </div>
   </section>
 </main>
