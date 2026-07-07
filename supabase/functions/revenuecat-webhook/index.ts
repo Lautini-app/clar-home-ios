@@ -67,9 +67,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 function entitlementFromProduct(productId: string): "one" | "two" | "all" | null {
   if (!productId) return null;
   const p = productId.toLowerCase();
-  if (p.includes("_all_")) return "all";
-  if (p.includes("_2apps_") || p.includes("_2app_")) return "two";
-  if (p.includes("_1app_"))  return "one";
+  if (p.includes("_all_")   || p.includes(".all."))   return "all";
+  if (p.includes("_2apps_") || p.includes("_2app_") || p.includes(".2apps.")) return "two";
+  if (p.includes("_1app_")  || p.includes(".1app."))  return "one";
   return null;
 }
 
