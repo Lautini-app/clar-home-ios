@@ -45,9 +45,9 @@ Diese IDs **müssen 1:1 identisch** in allen drei Systemen angelegt werden:
 
 | Plan             | Monatlich                | Jährlich                 |
 |------------------|--------------------------|--------------------------|
-| 1 App            | `clar_1app_monthly`      | `clar_1app_yearly`       |
-| 2 Apps           | `clar_2apps_monthly`     | `clar_2apps_yearly`      |
-| Alle Apps        | `clar_all_monthly`       | `clar_all_yearly`        |
+| 1 App            | `ch.lautini.clar.1app.monthly`      | `ch.lautini.clar.1app.yearly`       |
+| 2 Apps           | `ch.lautini.clar.2apps.monthly`     | `ch.lautini.clar.2apps.yearly`      |
+| Alle Apps        | `ch.lautini.clar.all.monthly`       | `ch.lautini.clar.all.yearly`        |
 
 **iOS-Preise** (im UI hinterlegt in `index.html`, RevenueCat + App Store Connect):
 
@@ -64,9 +64,15 @@ Connect + RevenueCat aktualisieren, `planPrices` in `index.html` anpassen.
 **RevenueCat-Entitlements** (Aliasse, die der Client via
 `apple_subscriptions.entitlement` interpretiert):
 
-- `one`  ← alle `clar_1app_*` Produkte
-- `two`  ← alle `clar_2apps_*` Produkte
-- `all`  ← alle `clar_all_*` Produkte
+- `one`  ← alle `ch.lautini.clar.1app.*` Produkte
+- `two`  ← alle `ch.lautini.clar.2apps.*` Produkte
+- `all`  ← alle `ch.lautini.clar.all.*` Produkte
+
+> Hinweis: Die Produkt-IDs `ch.lautini.clar.1app/2apps.monthly|yearly` existieren bereits
+> in RevenueCat (Projekt clar.app) und App Store Connect (angelegt Mai 2026).
+> Neu anzulegen sind nur `ch.lautini.clar.all.monthly` und `ch.lautini.clar.all.yearly`.
+> Bestehende RevenueCat-Entitlements: `clar.app`, `markt`, `heim` — Mapping vor dem
+> Launch mit diesem Schema abgleichen.
 
 ---
 
@@ -186,7 +192,7 @@ Voraussetzungen:
 ### Kauf-Flow (1-App-Abo, monatlich)
 
 - [ ] Paywall öffnen → Monatlich wählen → "1 App" → z. B. `markt` anhaken → "Abonnieren".
-- [ ] Native App-Store-Sheet erscheint mit `clar_1app_monthly` und Sandbox-Hinweis "[Sandbox]".
+- [ ] Native App-Store-Sheet erscheint mit `ch.lautini.clar.1app.monthly` und Sandbox-Hinweis "[Sandbox]".
 - [ ] Kauf mit Sandbox-Test-Konto bestätigen.
 - [ ] Nach Kauf: der Client pollt bis zu 20 s auf Webhook-Bestätigung; danach zeigt der Hub die App entsperrt.
 - [ ] Supabase: `apple_subscriptions` enthält eine Zeile mit `entitlement=one`, `selected_apps=['markt']`, `status=active`, `environment=sandbox`, `expires_at ~5 min` (Sandbox-Beschleunigung).
