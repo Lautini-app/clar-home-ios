@@ -421,35 +421,39 @@ const SESSION_STORAGE_KEY = 'clar.supabase.session';
 const SPLASH_MS = 1500;
 
 // ─── Despia Bridge ──────────────────────────────────────────────────────────
-// Der Wrapper injiziert eine globale despia()-Funktion. Ausserhalb des
-// Wrappers (Browser-Preview) fallen wir sauber ins Konsolen-Log.
+// KORRIGIERT 26.07.2026 nach offizieller Doku (setup.despia.com):
+// Despia injiziert KEINE JS-Funktion. Der native Layer fängt Scheme-URLs ab,
+// die per window.location.href gesetzt werden (decidePolicyFor in WKWebView).
+// Erkennung des Wrappers: User-Agent enthält "despia".
+const inDespiaRuntime = () => navigator.userAgent.toLowerCase().includes('despia');
 const despia = (url) => {
-  const fn = window.despia
-    || (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.despia
-        && ((u) => window.webkit.messageHandlers.despia.postMessage(u)));
-  if (typeof fn === 'function') {
-    try { fn(url); return true; } catch (err) { console.warn('[despia] call failed', err); }
-  }
+  try {
+    if (typeof window.despia === 'function') { window.despia(url); return true; }
+    if (inDespiaRuntime()) { window.location.href = url; return true; }
+  } catch (err) { console.warn('[despia] call failed', err); }
   console.info('[despia stub]', url);
   return false;
 };
 
 // ─── Safe-Area-Fallback (26.07.2026) ────────────────────────────────────────
 // Despias WKWebView liefert env(safe-area-inset-top) trotz viewport-fit=cover
-// als 0 → der App-Header („← clar") sass AUF der iOS-Uhrzeit. Wir messen den
-// echten Wert; ist er im Despia-Wrapper 0, setzen wir --sa-top hart auf 59px
-// (deckt Notch 47px und Dynamic Island 59px ab; im Browser bleibt env()).
+// als 0 → der App-Header („← clar") sass AUF der iOS-Uhrzeit. Despia injiziert
+// stattdessen eigene Variablen (--safe-area-top / --safe-area-bottom, lt.
+// offizieller Doku). Reihenfolge: env() wenn brauchbar → Despias
+// --safe-area-top → 59px hart (deckt Notch 47px und Dynamic Island 59px ab).
 (function () {
-  const probe = document.createElement('div');
-  probe.style.cssText = 'position:fixed;top:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top);';
-  document.body.appendChild(probe);
-  const measured = parseFloat(getComputedStyle(probe).paddingTop) || 0;
-  probe.remove();
-  const inDespia = !!(window.despia
-    || (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.despia));
-  if (inDespia && measured < 20) {
-    document.documentElement.style.setProperty('--sa-top', '59px');
-  }
+  const measure = (paddingTop) => {
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;top:0;visibility:hidden;pointer-events:none;padding-top:' + paddingTop + ';';
+    document.body.appendChild(probe);
+    const v = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+    probe.remove();
+    return v;
+  };
+  const envTop = measure('env(safe-area-inset-top)');
+  if (envTop >= 20 || !inDespiaRuntime()) return; // env() ok oder normaler Browser
+  const despiaTop = measure('var(--safe-area-top, 0px)');
+  document.documentElement.style.setProperty('--sa-top', (despiaTop >= 20 ? despiaTop : 59) + 'px');
 })();
 
 // ─── RevenueCat / App Store — Produkt-Konstanten ─────────────────────────────
@@ -890,6 +894,18 @@ async function pollForAppleActivation(timeoutMs) {
   }
   return false;
 }
+
+// Offizieller Despia-Callback: Store hat die Transaktion client-seitig
+// bestätigt. Zugriff wird erst nach Webhook-Bestätigung (Supabase) gewährt —
+// hier nur erneut pollen, falls die 20s im Kauffluss nicht gereicht haben.
+window.onRevenueCatPurchase = async () => {
+  await pollForAppleActivation(45000);
+  state.paywall.purchaseBusy = false;
+  await loadAccess();
+  renderSubscriptionActions();
+  renderTiles();
+  if (state.appleSubActive) closePaywall(); else renderPaywall();
+};
 
 // ─── E-Mail-Einwilligung ─────────────────────────────────────────────────────
 async function getEmailConsent(userId) {
