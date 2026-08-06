@@ -133,16 +133,28 @@ async function handleEvent(evt: RevenueCatEvent["event"]) {
   }
 
   // Aktivierendes Event (INITIAL_PURCHASE / RENEWAL / UNCANCELLATION / PRODUCT_CHANGE)
-  const intent = ["INITIAL_PURCHASE", "PRODUCT_CHANGE"].includes(evt.type)
-    ? await readIntent(userId)
-    : null;
+  // Fix 06.08.2026: Intent bei ALLEN aktivierenden Events lesen — Sandbox-Käufe
+  // kommen oft als RENEWAL an (bestehendes Test-Abo der Apple-ID), und auch in
+  // Produktion darf eine Verlängerung die App-Auswahl nie auf leer überschreiben.
+  const intent = await readIntent(userId);
 
-  const selectedApps =
-    entitlement === "all"
-      ? []
-      : intent?.selected_apps && Array.isArray(intent.selected_apps)
-        ? intent.selected_apps
-        : [];
+  let selectedApps: string[] = [];
+  if (entitlement !== "all") {
+    if (intent?.selected_apps && Array.isArray(intent.selected_apps) && intent.selected_apps.length) {
+      selectedApps = intent.selected_apps;
+    } else {
+      // Bestehende Auswahl erhalten statt mit [] zu überschreiben.
+      const { data: existing } = await supabase
+        .from("apple_subscriptions")
+        .select("selected_apps")
+        .eq("user_id", userId)
+        .eq("entitlement", entitlement)
+        .maybeSingle();
+      if (existing?.selected_apps && Array.isArray(existing.selected_apps)) {
+        selectedApps = existing.selected_apps;
+      }
+    }
+  }
 
   const row = {
     user_id: userId,

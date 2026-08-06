@@ -1155,6 +1155,28 @@ async function loadAccess() {
         if (appKey) state.appleApps.add(appKey);
       }
     });
+
+    // Fallback (06.08.2026): Bei RENEWAL-Events schrieb der Webhook die
+    // App-Auswahl nicht in apple_subscriptions (selected_apps blieb leer) —
+    // dann gilt die Auswahl aus apple_subscription_intents, die der
+    // Kauf-Flow vor dem Kauf gespeichert hat.
+    const brauchtIntent = activeAppleRows.some((row) => {
+      const ent = String(row.entitlement || '').toLowerCase();
+      return ent !== 'all' && (!Array.isArray(row.selected_apps) || row.selected_apps.length === 0);
+    });
+    if (brauchtIntent) {
+      const { data: intentRow } = await supabase
+        .from('apple_subscription_intents')
+        .select('selected_apps')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (intentRow && Array.isArray(intentRow.selected_apps)) {
+        intentRow.selected_apps.forEach((k) => {
+          const appKey = appKeyFromValue(k);
+          if (appKey) state.appleApps.add(appKey);
+        });
+      }
+    }
   } catch (_error) {
     state.entitlementLoadError = true;
   }
