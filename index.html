@@ -1350,9 +1350,19 @@ function renderSubscriptionActions() {
     host.append(box);
   };
 
-  // Priorität 1: aktives Web-Abo (Stripe) — kein Apple-Kauf mehr möglich.
+  // Priorität 1: aktives Web-Abo (Stripe) — der Kauf bleibt gesperrt,
+  // aber die Abo-Optionen (In-App-Käufe) bleiben sichtbar.
+  // Apple-Review 08.08.2026, 2.1(b) "unable to view in app purchase":
+  // das Demo-Konto hatte ein aktives Web-Abo, damit war die Paywall
+  // unerreichbar. updatePurchaseButton() sperrt den Kauf weiterhin.
   if (loggedIn && state.webSubActive) {
     appendStatus('<strong>Abo aktiv</strong><br>Über deinen clar-Web-Account abgeschlossen.');
+    const view = document.createElement('button');
+    view.type = 'button';
+    view.className = 'billing-button';
+    view.textContent = 'Abo-Optionen ansehen';
+    view.addEventListener('click', openPaywall);
+    host.append(view);
     host.append(makeAuthButton());
     return;
   }
