@@ -67,6 +67,10 @@ button:disabled{cursor:not-allowed;opacity:.58;}
 .subscription-status strong{color:var(--text);font-weight:750;}
 .billing-button{appearance:none;border:0;background:transparent;color:var(--green);font-size:.82rem;font-weight:650;text-decoration:none;}
 .billing-button:hover,.billing-button:focus-visible,.billing-button:active{text-decoration:underline;}
+.billing-button.danger{color:#B3403A;}
+.delete-hint{font-size:.78rem;color:#5C5F58;line-height:1.5;margin:0 0 10px;}
+.delete-confirm-button{appearance:none;border:0;border-radius:12px;width:100%;padding:12px;background:#B3403A;color:#fff;font-size:.9rem;font-weight:650;}
+.delete-confirm-button:disabled{opacity:.4;}
 .topbar{display:flex;width:100%;max-width:34rem;align-items:center;justify-content:center;margin-bottom:1rem;}
 .topbar .logo{font-size:2rem;}
 .paywall-screen{align-items:stretch;justify-content:center;}
@@ -408,6 +412,35 @@ body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
       </label>
       <button id="reviewer-submit" class="primary" type="submit">Anmelden</button>
       <p id="reviewer-status" class="status" role="status"></p>
+    </form>
+  </div>
+</div>
+
+<div id="delete-account-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="delete-account-title">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2 id="delete-account-title" class="title">Konto endgültig löschen</h2>
+        <p class="copy">Dieser Schritt kann nicht rückgängig gemacht werden.</p>
+      </div>
+      <button id="close-delete-account" class="close" type="button" aria-label="Schliessen">x</button>
+    </div>
+    <form id="delete-account-form" class="form">
+      <p class="delete-hint">
+        Dein clar-Konto und alle deine Daten in clar·markt, clar·heim, clar·tag und
+        clar·log werden sofort und unwiderruflich gelöscht.
+      </p>
+      <p class="delete-hint">
+        <strong>Wichtig bei aktivem Abo:</strong> Ein über den App&nbsp;Store abgeschlossenes
+        Abo wird durch die Kontolöschung nicht gekündigt. Kündige es in den
+        iOS-Einstellungen unter „Abos&#8203;", sonst läuft es weiter.
+      </p>
+      <label class="field">
+        <span class="label">Zur Bestätigung „LÖSCHEN" eintippen</span>
+        <input id="delete-account-confirm" class="input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      </label>
+      <button id="delete-account-submit" class="delete-confirm-button" type="submit" disabled>Konto endgültig löschen</button>
+      <p id="delete-account-status" class="status" role="status"></p>
     </form>
   </div>
 </div>
@@ -1363,7 +1396,7 @@ function renderSubscriptionActions() {
     view.textContent = 'Abo-Optionen ansehen';
     view.addEventListener('click', openPaywall);
     host.append(view);
-    host.append(makeAuthButton());
+    appendAccountButtons(host);
     return;
   }
 
@@ -1375,7 +1408,7 @@ function renderSubscriptionActions() {
     manage.textContent = 'Abo verwalten (App Store)';
     manage.addEventListener('click', () => despia('itms-apps://apps.apple.com/account/subscriptions'));
     host.append(manage);
-    host.append(makeAuthButton());
+    appendAccountButtons(host);
     return;
   }
 
@@ -1386,7 +1419,72 @@ function renderSubscriptionActions() {
   openBtn.textContent = 'Abo abschliessen';
   openBtn.addEventListener('click', openPaywall);
   host.append(openBtn);
-  host.append(makeAuthButton());
+  appendAccountButtons(host);
+}
+
+// Apple 5.1.1(v): Konto-Löschung muss in der App auffindbar sein — für alle
+// eingeloggten Nutzer, unabhängig vom Abo-Status.
+function appendAccountButtons(host) {
+  appendAccountButtons(host);
+  if (state.session) {
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'billing-button danger';
+    del.textContent = 'Konto löschen';
+    del.addEventListener('click', openDeleteAccountModal);
+    host.append(del);
+  }
+}
+
+function openDeleteAccountModal() {
+  byId('delete-account-confirm').value = '';
+  byId('delete-account-submit').disabled = true;
+  setStatus('delete-account-status');
+  byId('delete-account-modal').classList.add('active');
+}
+
+function closeDeleteAccountModal() {
+  byId('delete-account-modal').classList.remove('active');
+  setStatus('delete-account-status');
+}
+
+async function handleDeleteAccount(event) {
+  event.preventDefault();
+  if (byId('delete-account-confirm').value.trim() !== 'LÖSCHEN') return;
+  const submit = byId('delete-account-submit');
+  submit.disabled = true;
+  setStatus('delete-account-status', 'Konto wird gelöscht …');
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if (!accessToken) throw new Error('Keine aktive Sitzung.');
+    const res = await fetch(SUPABASE_URL + '/functions/v1/delete-clar-account', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + accessToken,
+        'apikey': SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ accessToken }),
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || payload.error) throw new Error(payload.error || ('Fehler ' + res.status));
+    setStatus('delete-account-status', 'Dein Konto wurde gelöscht.');
+    await supabase.auth.signOut().catch(() => {});
+    state.session = null;
+    state.pushRegistered = false;
+    clearStoredSession();
+    window.setTimeout(() => {
+      closeDeleteAccountModal();
+      showScreen('login');
+      renderTiles();
+      renderSubscriptionActions();
+    }, 1200);
+  } catch (err) {
+    console.error('[delete-account]', err);
+    setStatus('delete-account-status', 'Löschen fehlgeschlagen: ' + (err instanceof Error ? err.message : 'Unbekannter Fehler'));
+    submit.disabled = false;
+  }
 }
 
 function makeAuthButton() {
@@ -1449,6 +1547,15 @@ function wireEvents() {
   byId('reviewer-modal').addEventListener('click', (event) => {
     if (event.target.id === 'reviewer-modal') closeReviewerModal();
   });
+
+  byId('close-delete-account').addEventListener('click', closeDeleteAccountModal);
+  byId('delete-account-modal').addEventListener('click', (event) => {
+    if (event.target.id === 'delete-account-modal') closeDeleteAccountModal();
+  });
+  byId('delete-account-confirm').addEventListener('input', () => {
+    byId('delete-account-submit').disabled = byId('delete-account-confirm').value.trim() !== 'LÖSCHEN';
+  });
+  byId('delete-account-form').addEventListener('submit', handleDeleteAccount);
 
   document.querySelectorAll('.consent-option').forEach((btn) => {
     btn.addEventListener('click', () => {
