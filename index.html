@@ -1272,7 +1272,8 @@ function renderTiles() {
 
 function createTile(app) {
   const hasAccess = hasAppAccess(app);
-  const isComingSoon = app.key === 'clarlog' && !hasAccess;
+  // clar·log ist seit 06.08.2026 regulär verfügbar — keine Sonderbehandlung mehr.
+  const isComingSoon = false;
   const isLocked = !hasAccess;
   const tile = document.createElement('div');
   tile.className = `tile${isLocked ? ' locked' : ''}`;
