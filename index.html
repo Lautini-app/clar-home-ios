@@ -169,7 +169,7 @@ body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
         <div class="stack">
           <div>
             <h1 id="login-title" class="title">Willkommen zu clar</h1>
-            <p id="login-copy" class="copy">Melde dich an, um deine clar·Apps zu nutzen.</p>
+            <p id="login-copy" class="copy">Melde dich an, um deine clar·Apps zu nutzen. Dein Konto trägt deine Einträge, deine Freigaben an Beobachter:innen und Ärzt:innen sowie deinen Familien-Haushalt — es hält sie auf all deinen Geräten aktuell und schützt sie vor fremdem Zugriff.</p>
             <p class="copy" style="opacity:.45;font-size:.75rem;margin-top:.25rem;">App-Version (iOS)</p>
           </div>
 
@@ -272,6 +272,7 @@ body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
         <div>
           <h1 id="paywall-title" class="title">clar·Apps abonnieren</h1>
           <p class="copy">Wähle dein Abo. Der Kauf erfolgt sicher über deinen Apple-Account.</p>
+          <p class="copy" style="margin-top:.4rem;font-size:.82rem;">Zu jedem clar-Abo gehört ein Konto: Deine Einträge, die Freigaben an Beobachter:innen und das Arzt-Dossier sind persönlich, werden zwischen deinen Geräten synchronisiert und mit den Personen geteilt, die du einlädst. Ohne Konto gäbe es diese Inhalte nicht.</p>
         </div>
         <button id="close-paywall" class="paywall-close" type="button" aria-label="Schliessen">x</button>
       </header>
@@ -848,7 +849,7 @@ function isCheckoutAppAvailable(appKey) {
 // ─── Kauf via Despia → RevenueCat ────────────────────────────────────────────
 async function startPurchase() {
   if (!state.session?.user?.id) {
-    setStatus('paywall-status', 'Bitte melde dich an, um fortzufahren.', true);
+    setStatus('paywall-status', 'Für ein clar-Abo brauchst du ein Konto — deine Einträge und Freigaben gehören dorthin. Anmelden dauert einen Moment.', true);
     showScreen('login');
     return;
   }
