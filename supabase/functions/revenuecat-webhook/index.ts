@@ -42,7 +42,7 @@ type RevenueCatEvent = {
     type: RevenueCatEventType;
     app_user_id: string;
     original_app_user_id?: string;
-    product_id: string;
+    product_id?: string;
     period_type?: "NORMAL" | "INTRO" | "TRIAL" | "PROMOTIONAL";
     purchased_at_ms?: number;
     expiration_at_ms?: number;
@@ -51,6 +51,8 @@ type RevenueCatEvent = {
     entitlement_id?: string;
     entitlement_ids?: string[];
     cancel_reason?: string;
+    transferred_from?: string[];
+    transferred_to?: string[];
     [key: string]: unknown;
   };
   api_version?: string;
@@ -102,11 +104,76 @@ async function readIntent(userId: string) {
   return data ?? null;
 }
 
+function asIdList(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  if (typeof value === "string" && value.trim()) return [value.trim()];
+  return [];
+}
+
+async function moveAppleRows(fromId: string, toId: string, evt: RevenueCatEvent["event"]) {
+  const { data: rows, error } = await supabase
+    .from("apple_subscriptions")
+    .select("product_id, entitlement, selected_apps, status, environment, original_purchase_at, purchased_at, expires_at, cancelled_at, is_trial")
+    .eq("user_id", fromId);
+  if (error) throw error;
+
+  for (const row of rows || []) {
+    const { error: upErr } = await supabase.from("apple_subscriptions").upsert({
+      user_id: toId,
+      revenuecat_app_user_id: toId,
+      product_id: row.product_id,
+      entitlement: row.entitlement,
+      selected_apps: row.selected_apps ?? [],
+      status: row.status,
+      environment: row.environment,
+      original_purchase_at: row.original_purchase_at,
+      purchased_at: row.purchased_at,
+      expires_at: row.expires_at,
+      cancelled_at: row.cancelled_at,
+      is_trial: row.is_trial,
+      raw_event: evt as unknown as Record<string, unknown>,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id,entitlement" });
+    if (upErr) throw upErr;
+  }
+
+  if ((rows || []).length) {
+    const { error: delErr } = await supabase.from("apple_subscriptions").delete().eq("user_id", fromId);
+    if (delErr) throw delErr;
+  }
+
+  const intent = await readIntent(fromId);
+  if (intent) {
+    const { error: intentErr } = await supabase.from("apple_subscription_intents").upsert({
+      user_id: toId,
+      product_id: intent.product_id,
+      selected_apps: intent.selected_apps,
+      created_at: intent.created_at,
+    }, { onConflict: "user_id" });
+    if (intentErr) throw intentErr;
+    await supabase.from("apple_subscription_intents").delete().eq("user_id", fromId);
+  }
+}
+
+async function handleTransfer(evt: RevenueCatEvent["event"]) {
+  const fromIds = [...asIdList(evt.transferred_from), evt.original_app_user_id || ""].filter(Boolean);
+  const toIds = [...asIdList(evt.transferred_to), evt.app_user_id || ""].filter(Boolean);
+  const toId = toIds.find((id) => !fromIds.includes(id)) || evt.app_user_id;
+  if (!toId) return { ok: true, ignored: true, reason: "no destination" };
+  const sources = [...new Set(fromIds.filter((id) => id && id !== toId))];
+  if (!sources.length) return { ok: true, ignored: true, reason: "no source" };
+
+  for (const fromId of sources) {
+    await moveAppleRows(fromId, toId, evt);
+  }
+  return { ok: true, kind: "transfer", to: toId, from: sources };
+}
+
 async function handleEvent(evt: RevenueCatEvent["event"]) {
   const userId = evt.app_user_id;
   if (!userId) throw new Error("missing app_user_id");
 
-  const entitlement = entitlementFromProduct(evt.product_id);
+  const entitlement = entitlementFromProduct(evt.product_id || "");
   if (!entitlement) {
     console.warn("[rc-webhook] unknown product_id, ignoring", evt.product_id);
     return { ok: true, ignored: true };
@@ -159,7 +226,7 @@ async function handleEvent(evt: RevenueCatEvent["event"]) {
   const row = {
     user_id: userId,
     revenuecat_app_user_id: userId,
-    product_id: evt.product_id,
+    product_id: evt.product_id || "",
     entitlement,
     selected_apps: selectedApps,
     status: "active",
@@ -213,6 +280,20 @@ Deno.serve(async (req: Request) => {
   // Test-Events akzeptieren aber nichts persistieren.
   if (evt.type === "TEST") {
     return jsonResponse(200, { ok: true, kind: "test" });
+  }
+
+  if (evt.type === "TRANSFER" || evt.type === "SUBSCRIBER_ALIAS") {
+    try {
+      const result = await handleTransfer(evt);
+      return jsonResponse(200, result);
+    } catch (err) {
+      console.error("[rc-webhook] transfer failed", err);
+      return jsonResponse(500, { error: err instanceof Error ? err.message : "unknown error" });
+    }
+  }
+
+  if (evt.type === "BILLING_ISSUE") {
+    return jsonResponse(200, { ok: true, ignored: true, kind: "billing_issue" });
   }
 
   try {

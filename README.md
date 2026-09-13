@@ -78,11 +78,12 @@ Connect + RevenueCat aktualisieren, `planPrices` in `index.html` anpassen.
 
 ## Despia-Bridge
 
-Die App nutzt drei URL-Schemata:
+Die App nutzt diese URL-Schemata:
 
-- `revenuecat://purchase?external_id={SUPABASE_USER_UUID}&product={PRODUCT_ID}` — startet den nativen Kauf-Flow. `external_id` = Supabase `auth.users.id`. (Alternative des Wrappers: `revenuecat://launchPaywall?offering=default`.)
+- `revenuecat://purchase?external_id={SUPABASE_USER_UUID}&product={PRODUCT_ID}` — startet den nativen Kauf-Flow. `external_id` = Supabase `auth.users.id` (auch für Gäste).
+- `revenuecat://login?external_id={UUID}` — nur wenn ein Gäste-Kauf an ein **schon bestehendes** Konto gehängt wird (Despia-Nähe zu RevenueCat `logIn()`).
 - `itms-apps://apps.apple.com/account/subscriptions` — Apples native Abo-Verwaltung.
-- `push://register?external_id={UUID}` — Push-Registrierung; wird bei Login und Session-Restore ausgelöst.
+- `push://register?external_id={UUID}` — Push-Registrierung; wird bei Session-Restore ausgelöst.
 
 Der Aufruf läuft über `window.despia(url)` (vom Wrapper injiziert) mit Fallback
 auf `webkit.messageHandlers.despia.postMessage`. **Ausserhalb des Wrappers**
@@ -107,18 +108,41 @@ Apps) nicht mehr auf Stripe/Web-Preisen.
 
 Zugriff auf eine App ist frei, wenn **eine** dieser Quellen aktiv ist:
 
-- `subscribers` (Stripe/Web — Legacy, bestehende Kunden)
-- `groups`/`group_members` (Familien-Sharing — bestehend, unverändert)
-- `apple_subscriptions` (Apple-IAP — **neu**, additiv)
+- `apple_subscriptions` (Apple-IAP)
+- `groups`/`group_members` (Familien-Sharing in clar)
 
-Priorisierung in der Paywall:
-- Aktives Web-Abo → Paywall zeigt Hinweis "Abo aktiv, über Web-Konto"; Kauf-Button ist deaktiviert. Kein Stripe-Link.
-- Aktives Apple-Abo → Paywall öffnet direkt `itms-apps://…subscriptions`; Verwalten geht über App Store.
-- Kein Abo → normale Paywall mit RevenueCat-Kauf.
+Die iOS-App liest **keine** Stripe-Tabelle `subscribers` und sperrt den
+Apple-Kauf nicht wegen eines Web-Abos. Stripe bleibt auf dem Web-Weg
+(clar-adhs.ch / home.lautini.ch).
+
+Paywall:
+- Aktives Apple-Abo → öffnet `itms-apps://…subscriptions`
+- Sonst → Kauf über RevenueCat, mit stillem Gäste-Konto falls noch keines da ist
 
 App-Auswahl bei 1/2-App-Abos: der Client speichert die Auswahl vor dem
-Kauf in `apple_subscription_intents`; der Webhook übernimmt sie beim
-INITIAL_PURCHASE nach `apple_subscriptions.selected_apps`.
+Kauf in `apple_subscription_intents` (auch für Gäste); der Webhook
+übernimmt sie nach `apple_subscriptions.selected_apps`.
+
+---
+
+## Gäste-Kauf
+
+Ohne Formular legt die Hülle ein anonymes Supabase-Konto an. Damit wird
+gekauft. Nach dem Kauf kann optional ein Konto angelegt werden — die
+Personen-Nummer bleibt. Wer sich stattdessen in ein schon bestehendes
+Konto einloggt, hängt das Abo per `claim-apple-subscription` und
+`revenuecat://login` um.
+
+**Dashboard (Rainer, falls noch nicht gesetzt):**
+
+1. Authentication → Providers → **Anonymous** einschalten (im Test war es bereits an)
+2. Authentication → Settings → **Manual linking** einschalten (für Apple-Umwandlung)
+3. Functions deployen:
+
+```bash
+supabase functions deploy revenuecat-webhook --no-verify-jwt
+supabase functions deploy claim-apple-subscription
+```
 
 ---
 
@@ -183,34 +207,30 @@ Voraussetzungen:
 
 ### Basis-Sanity
 
-- [ ] App öffnet, Splash → Login-Screen.
-- [ ] Registrierung neuer Sandbox-User → Session steht.
-- [ ] E-Mail-Consent-Modal erscheint einmalig; Auswahl wird in `email_consent` persistiert.
-- [ ] Push-Registrierung: `[despia] push://register?external_id=<uuid>` sichtbar in Wrapper-Logs.
-- [ ] Kacheln erscheinen als "gesperrt" (Schloss) — keine Web-Preise sichtbar.
+- [ ] App öffnet, Splash → Kacheln (kein Login-Zwang). Stilles Gäste-Konto in der Session.
+- [ ] Kein E-Mail-Fenster, solange das Konto keine Adresse hat.
+- [ ] Kacheln erscheinen als "gesperrt" (Schloss). Keine Web-Preise, kein Stripe, kein Hinweis auf die Website.
+- [ ] «Konto anlegen» ist optional und führt nicht in eine Sackgasse («Weiter ohne Konto»).
 
-### Kauf-Flow (1-App-Abo, monatlich)
+### Kauf-Flow (1-App-Abo, monatlich, ohne Konto)
 
-- [ ] Paywall öffnen → Monatlich wählen → "1 App" → z. B. `markt` anhaken → "Abonnieren".
-- [ ] Native App-Store-Sheet erscheint mit `ch.lautini.clar.1app.monthly` und Sandbox-Hinweis "[Sandbox]".
-- [ ] Kauf mit Sandbox-Test-Konto bestätigen.
-- [ ] Nach Kauf: der Client pollt bis zu 20 s auf Webhook-Bestätigung; danach zeigt der Hub die App entsperrt.
-- [ ] Supabase: `apple_subscriptions` enthält eine Zeile mit `entitlement=one`, `selected_apps=['markt']`, `status=active`, `environment=sandbox`, `expires_at ~5 min` (Sandbox-Beschleunigung).
-- [ ] `apple_subscription_intents` ist wieder leer (der Webhook hat den Intent konsumiert).
+- [ ] Paywall öffnen → Monatlich wählen → "1 App" → z. B. `markt` anhaken → "Abonnieren". Kein Login dazwischen.
+- [ ] Native App-Store-Sheet erscheint mit `ch.lautini.clar2.1app.monthly`.
+- [ ] Nach Kauf: gewählte Kachel geht auf. Optional-Hinweis «Konto anlegen, damit du das Abo auf allen Geräten nutzen kannst.» — schliessbar.
+- [ ] Supabase: `apple_subscriptions` an der Gäste-UUID, `selected_apps` enthält die Wahl. `apple_subscription_intents` danach leer.
+
+### Sonderfälle
+
+- [ ] Stripe/Web-Abo hat in der iOS-App keine Wirkung (wird nicht gelesen, Kauf bleibt möglich).
+- [ ] "Abo verwalten" (Apple-Abo aktiv) → öffnet native App-Store-Verwaltung via `itms-apps://…`.
+- [ ] "All"-Plan Kauf → `entitlement=all`. Alle Kacheln entsperrt.
+- [ ] Gäste-Konto per Apple oder E-Mail umwandeln → dieselbe `user_id`.
+- [ ] Anmelden mit schon bestehendem Konto nach Gäste-Kauf → Abo wandert (claim + RevenueCat-Alias).
 
 ### Verlängerung / Ablauf (Sandbox: 1 Mt ≈ 5 min)
 
 - [ ] Nach ~5 min: RENEWAL kommt → Row bleibt `active`, `expires_at` verschiebt sich.
-- [ ] Nach mehreren Renewals oder manuellem Kündigen im App-Store: CANCELLATION → `status=cancelled`, `cancelled_at` gesetzt. Zugriff bleibt bis `expires_at` bestehen.
 - [ ] Nach Ablauf: EXPIRATION → `status=expired`. Kachel wird gesperrt.
-
-### Sonderfälle
-
-- [ ] Nutzer hat aktives Stripe-Web-Abo (`subscribers.subscribed=true`) → Paywall zeigt "Abo aktiv (Web-Konto)". Kauf-Button deaktiviert. Kein Stripe-Link sichtbar. Zugriff steht.
-- [ ] "Abo verwalten" (Apple-Abo aktiv) → öffnet native App-Store-Verwaltung via `itms-apps://…`.
-- [ ] "All"-Plan Kauf → `entitlement=all`, `selected_apps=[]`. Alle Kacheln sind entsperrt (inkl. `clar·log`? — nein: clar·log-Kachel bleibt "bald verfügbar" bis der Launch freigegeben ist; der Zugriff wird trotzdem gewährt sobald sie live geht).
-- [ ] clar·log-Kachel: identisches Verhalten wie im Web ("bald verfügbar", Kachel gedimmt, kein Klick).
-- [ ] App wird nach Kauf minimiert (App-Store-Kontenverwaltung) und zurückgeholt → `visibilitychange`-Handler lädt Abo-Status neu; UI aktualisiert sich.
 
 ### Offline / Rand
 

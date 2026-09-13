@@ -10,17 +10,23 @@ App im Store sofort, ohne neuen Build.
 ## Apple App Review — aktueller Stand
 
 **Version 1.1.0 (Build 8070432) ist ABGELEHNT**, Guideline **5.1.1(v)**:
-Die App verlangt eine Registrierung, bevor ein Abo gekauft werden kann.
-Konkret bricht `startPurchase()` ab, wenn keine Session da ist, und schickt
-zum Login. «Erneut zur App-Prüfung übermitteln» ist ausgegraut und wird erst
-wieder aktiv, wenn an der App-Version tatsächlich etwas geändert wird.
+Die App verlangte eine Registrierung, bevor ein Abo gekauft werden konnte.
+`startPurchase()` brach ohne Session ab und schickte zum Login. Erklärtexte
+(Commit `913ccbc`) haben nicht gereicht.
 
-Versucht und **nicht ausreichend**: Erklärtexte in Paywall und Login, dass das
-Abo kontobasiert sei (Commit `913ccbc`, live).
+**Umbau (Branch, noch nicht auf main):** Stilles Gäste-Konto (Supabase anonym),
+Kauf mit dieser Personen-Nummer als RevenueCat `external_id`, Konto danach
+optional. Dieselbe Nummer bleibt beim Umwandeln. RevenueCat-Alias nur, wenn
+jemand ein schon bestehendes Konto nimmt. iOS liest keine Stripe-Abos und
+erwähnt die Website nicht.
 
-Voraussichtlich nötig: Kauf **ohne Konto** über eine anonyme RevenueCat-
-App-User-ID, Konto danach optional anbieten, anonyme ID per `logIn()` mit der
-Konto-ID verknüpfen. Danach neuer Build oder Änderung an der App-Version.
+Noch nicht an Apple übermittelt. «Erneut zur App-Prüfung übermitteln» bleibt
+ausgegraut, bis an der nativen App-Version etwas geändert wird.
+
+**Damit der Weg live geht, braucht es im Supabase-Dashboard (Rainer):**
+1. Authentication → Providers → Anonymous sign-ins — im Test bereits an
+2. Authentication → Settings → Manual linking einschalten (für Apple-Umwandlung)
+3. Edge Functions: `revenuecat-webhook` neu deployen, `claim-apple-subscription` deployen
 
 ## Was man über frühere Runden wissen sollte
 

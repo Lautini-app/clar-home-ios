@@ -140,10 +140,14 @@ body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
 .divider-or::before, .divider-or::after {
   content: ""; flex: 1; height: 1px; background: rgba(0,0,0,.12);
 }
-.email-toggle {
+.email-toggle,.login-back {
   width: 100%; padding: .6rem 1rem; border: none; background: transparent;
   color: var(--green, #2E5C3E); font-size: .9rem; font-family: inherit;
   text-decoration: underline; cursor: pointer;
+}
+.upgrade-later {
+  width: 100%; min-height: 2.85rem; margin-top: .35rem; border: 0; background: transparent;
+  color: var(--green); font-weight: 650; text-decoration: underline;
 }
 </style>
   <link rel="manifest" href="/manifest.json">
@@ -168,8 +172,8 @@ body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
       <div class="card">
         <div class="stack">
           <div>
-            <h1 id="login-title" class="title">Willkommen zu clar</h1>
-            <p id="login-copy" class="copy">Melde dich an, um deine clar·Apps zu nutzen. Dein Konto trägt deine Einträge, deine Freigaben an Beobachter:innen und Ärzt:innen sowie deinen Familien-Haushalt — es hält sie auf all deinen Geräten aktuell und schützt sie vor fremdem Zugriff.</p>
+            <h1 id="login-title" class="title">Konto anlegen</h1>
+            <p id="login-copy" class="copy">Konto anlegen, damit du das Abo auf allen Geräten nutzen kannst.</p>
             <p class="copy" style="opacity:.45;font-size:.75rem;margin-top:.25rem;">App-Version (iOS)</p>
           </div>
 
@@ -220,6 +224,7 @@ body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
           </form>
 
           <p id="auth-status" class="status" role="status"></p>
+          <button id="close-login" class="login-back" type="button">Weiter ohne Konto</button>
         </div>
       </div>
     </div>
@@ -261,7 +266,7 @@ body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
         <span>·</span>
         <a href="https://blog.lautini.ch/impressum" target="_blank" rel="noopener">Impressum</a>
         <span>·</span>
-        <a href="#" id="open-consent-edit">E-Mail-Einstellungen</a>
+        <a href="#" id="open-consent-edit" class="hidden">E-Mail-Einstellungen</a>
       </nav>
     </div>
   </section>
@@ -272,7 +277,7 @@ body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
         <div>
           <h1 id="paywall-title" class="title">clar·Apps abonnieren</h1>
           <p class="copy">Wähle dein Abo. Der Kauf erfolgt sicher über deinen Apple-Account.</p>
-          <p class="copy" style="margin-top:.4rem;font-size:.82rem;">Zu jedem clar-Abo gehört ein Konto: Deine Einträge, die Freigaben an Beobachter:innen und das Arzt-Dossier sind persönlich, werden zwischen deinen Geräten synchronisiert und mit den Personen geteilt, die du einlädst. Ohne Konto gäbe es diese Inhalte nicht.</p>
+          <p class="copy" style="margin-top:.4rem;font-size:.82rem;">Ein Konto ist optional. Nach dem Kauf kannst du eines anlegen, damit du das Abo auf allen Geräten nutzen kannst.</p>
         </div>
         <button id="close-paywall" class="paywall-close" type="button" aria-label="Schliessen">x</button>
       </header>
@@ -446,12 +451,29 @@ body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
   </div>
 </div>
 
+<div id="upgrade-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="upgrade-title">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2 id="upgrade-title" class="title">Auf anderen Geräten nutzen?</h2>
+        <p class="copy">Konto anlegen, damit du das Abo auf allen Geräten nutzen kannst.</p>
+      </div>
+      <button id="close-upgrade" class="close" type="button" aria-label="Schliessen">x</button>
+    </div>
+    <button id="upgrade-now" class="primary" type="button">Konto anlegen</button>
+    <button id="upgrade-later" class="upgrade-later" type="button">Später</button>
+  </div>
+</div>
+
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 const SUPABASE_URL = 'https://cgwpzpnklxphqxlixtva.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNnd3B6cG5rbHhwaHF4bGl4dHZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwODcyNTcsImV4cCI6MjA5NDY2MzI1N30.t-VnUALdHsoNo9mJ6LV-lW4OntJLqHnF36SHb0rNP0c';
 const SESSION_STORAGE_KEY = 'clar.supabase.session';
+const GUEST_CLAIM_KEY = 'clar.guest.claim';
+const LAST_SELECTED_APPS_KEY = 'clar.last_selected_apps';
+const UPGRADE_OFFERED_KEY = 'clar.upgrade.offered';
 const SPLASH_MS = 1500;
 
 // ─── Despia Bridge ──────────────────────────────────────────────────────────
@@ -589,10 +611,8 @@ const screens = {
 
 const state = {
   session: null,
-  subscriberApps: new Set(),   // Stripe-Web-Abo (Legacy: bleibt für User, die vor iOS über Web abgeschlossen haben)
   groupApps: new Set(),
   appleApps: new Set(),        // Apple-IAP-Abo
-  webSubActive: false,
   appleSubActive: false,
   entitlementLoadError: false,
   activeGroupIds: [],
@@ -606,6 +626,110 @@ const state = {
 };
 
 const byId = (id) => document.getElementById(id);
+
+function isAnonymousUser(user = state.session?.user) {
+  return !!user && user.is_anonymous === true;
+}
+
+function hasUsableEmail(user = state.session?.user) {
+  if (!user || isAnonymousUser(user)) return false;
+  const email = String(user.email || '').trim();
+  return email.length > 0 && !/@anonymous$/i.test(email);
+}
+
+function currentUserId() {
+  return state.session?.user?.id || '';
+}
+
+function rememberGuestClaim(session = state.session) {
+  if (!session?.user?.id || !session.access_token) return;
+  if (!isAnonymousUser(session.user)) return;
+  try {
+    window.localStorage.setItem(GUEST_CLAIM_KEY, JSON.stringify({
+      user_id: session.user.id,
+      access_token: session.access_token
+    }));
+  } catch (_error) { /* ignore */ }
+}
+
+function clearGuestClaim() {
+  try { window.localStorage.removeItem(GUEST_CLAIM_KEY); } catch (_error) { /* ignore */ }
+}
+
+function readGuestClaim() {
+  try {
+    return JSON.parse(window.localStorage.getItem(GUEST_CLAIM_KEY) || 'null');
+  } catch (_error) {
+    return null;
+  }
+}
+
+function rememberSelectedApps(selectedApps) {
+  try {
+    window.sessionStorage.setItem(LAST_SELECTED_APPS_KEY, JSON.stringify(selectedApps || []));
+  } catch (_error) { /* ignore */ }
+}
+
+function readRememberedSelectedApps() {
+  try {
+    const parsed = JSON.parse(window.sessionStorage.getItem(LAST_SELECTED_APPS_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_error) {
+    return [];
+  }
+}
+
+async function ensureGuestSession() {
+  if (state.session?.user?.id) return state.session;
+  const { data, error } = await supabase.auth.signInAnonymously();
+  if (error) throw error;
+  if (!data.session) throw new Error('Kein Gäste-Konto erhalten.');
+  state.session = data.session;
+  storeSession(data.session);
+  return data.session;
+}
+
+function identifyRevenueCat(userId) {
+  if (!userId) return;
+  despia(`revenuecat://login?external_id=${encodeURIComponent(userId)}`);
+}
+
+async function aliasGuestToAccount(fromUserId, guestAccessToken) {
+  const toUserId = currentUserId();
+  if (!fromUserId || !toUserId || fromUserId === toUserId) return;
+  identifyRevenueCat(toUserId);
+  try {
+    const res = await fetch(SUPABASE_URL + '/functions/v1/claim-apple-subscription', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + state.session.access_token,
+        'apikey': SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ guest_access_token: guestAccessToken }),
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      console.warn('[claim-apple-subscription]', res.status, payload);
+    }
+  } catch (err) {
+    console.warn('[claim-apple-subscription]', err);
+  }
+  await pollForAppleActivation(20000);
+}
+
+async function consumeGuestClaimIfNeeded() {
+  const pending = readGuestClaim();
+  if (!pending?.user_id || !pending.access_token) return;
+  const toId = currentUserId();
+  if (!toId || isAnonymousUser()) return;
+  if (toId === pending.user_id) {
+    clearGuestClaim();
+    return;
+  }
+  clearGuestClaim();
+  await aliasGuestToAccount(pending.user_id, pending.access_token);
+}
 
 let currentLoadedAppOrigin = null;
 
@@ -689,17 +813,11 @@ function registerPushIfNeeded() {
 }
 
 function openPaywall() {
-  // Aktives Web-Abo: Apple lässt keinen Doppelkauf zu. Wir erklären das
-  // im Paywall-Status und deaktivieren den Kauf-Button.
   if (state.appleSubActive) {
     despia('itms-apps://apps.apple.com/account/subscriptions');
     return;
   }
-  if (state.webSubActive) {
-    setStatus('paywall-status', 'Dein Abo läuft bereits über clar (Web-Konto). In der App kann kein zusätzliches Abo abgeschlossen werden.', false);
-  } else {
-    setStatus('paywall-status');
-  }
+  setStatus('paywall-status');
   renderPaywall();
   showScreen('paywall');
   byId('close-paywall').focus();
@@ -763,15 +881,8 @@ function renderAppSelection() {
 
 function updatePurchaseButton() {
   const button = byId('checkout-submit');
-  const blocked = state.webSubActive;
-  button.disabled = blocked || state.paywall.purchaseBusy || !isPaywallSelectionComplete();
-  if (blocked) {
-    button.textContent = 'Abo bereits aktiv (Web)';
-  } else if (state.paywall.purchaseBusy) {
-    button.textContent = 'App Store wird geöffnet…';
-  } else {
-    button.textContent = 'Abonnieren';
-  }
+  button.disabled = state.paywall.purchaseBusy || !isPaywallSelectionComplete();
+  button.textContent = state.paywall.purchaseBusy ? 'App Store wird geöffnet…' : 'Abonnieren';
 }
 
 function setBillingInterval(billing) {
@@ -848,14 +959,11 @@ function isCheckoutAppAvailable(appKey) {
 
 // ─── Kauf via Despia → RevenueCat ────────────────────────────────────────────
 async function startPurchase() {
-  if (!state.session?.user?.id) {
-    setStatus('paywall-status', 'Für ein clar-Abo brauchst du ein Konto — deine Einträge und Freigaben gehören dorthin. Anmelden dauert einen Moment.', true);
-    showScreen('login');
-    return;
-  }
-
-  if (state.webSubActive) {
-    setStatus('paywall-status', 'Dein Web-Abo ist bereits aktiv — verwalte es über clar (Web-Konto).', true);
+  try {
+    await ensureGuestSession();
+  } catch (err) {
+    console.warn('[guest-session]', err);
+    setStatus('paywall-status', 'Der Kauf ist gerade nicht möglich. Bitte versuche es noch einmal.', true);
     return;
   }
 
@@ -872,19 +980,23 @@ async function startPurchase() {
   }
 
   // App-Auswahl (1/2-App-Abos) speichern, damit der Webhook nach Kauf-Bestätigung
-  // die richtige selected_apps setzen kann. Best-Effort — nicht kritisch.
+  // die richtige selected_apps setzen kann — auch für Gäste.
   const selectedApps = getSelectedCheckoutApps();
-  try {
-    await supabase
-      .from('apple_subscription_intents')
-      .upsert({
-        user_id: state.session.user.id,
-        product_id: productId,
-        selected_apps: selectedApps,
-        created_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
-  } catch (err) {
-    console.warn('[intent] upsert failed', err);
+  rememberSelectedApps(selectedApps);
+  const { error: intentError } = await supabase
+    .from('apple_subscription_intents')
+    .upsert({
+      user_id: state.session.user.id,
+      product_id: productId,
+      selected_apps: selectedApps,
+      created_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+  if (intentError) {
+    console.warn('[intent] upsert failed', intentError);
+    if (plan !== 'all') {
+      setStatus('paywall-status', 'Die App-Auswahl konnte nicht gespeichert werden. Bitte noch einmal versuchen.', true);
+      return;
+    }
   }
 
   state.paywall.purchaseBusy = true;
@@ -914,6 +1026,7 @@ async function startPurchase() {
   renderTiles();
   if (state.appleSubActive) {
     closePaywall();
+    maybeOfferAccountUpgrade();
   } else {
     renderPaywall();
   }
@@ -938,7 +1051,12 @@ window.onRevenueCatPurchase = async () => {
   await loadAccess();
   renderSubscriptionActions();
   renderTiles();
-  if (state.appleSubActive) closePaywall(); else renderPaywall();
+  if (state.appleSubActive) {
+    closePaywall();
+    maybeOfferAccountUpgrade();
+  } else {
+    renderPaywall();
+  }
 };
 
 // ─── E-Mail-Einwilligung ─────────────────────────────────────────────────────
@@ -1011,20 +1129,62 @@ function closeConsentModal(value) {
 
 async function ensureEmailConsent() {
   const userId = state.session?.user?.id;
-  if (!userId) return;
+  if (!userId || !hasUsableEmail()) return;
   const row = await getEmailConsent(userId);
   if (row?.consent_level) return;
   await openConsentModal({ allowClose: false });
 }
 
+function renderEmailSettingsLink() {
+  const link = byId('open-consent-edit');
+  if (!link) return;
+  const show = hasUsableEmail();
+  link.classList.toggle('hidden', !show);
+  const sep = link.previousElementSibling;
+  if (sep && sep.tagName === 'SPAN') sep.classList.toggle('hidden', !show);
+}
+
+function openUpgradeModal() {
+  byId('upgrade-modal').classList.add('active');
+}
+
+function closeUpgradeModal() {
+  byId('upgrade-modal').classList.remove('active');
+}
+
+function maybeOfferAccountUpgrade() {
+  if (!isAnonymousUser() || !state.appleSubActive) return;
+  try {
+    if (window.sessionStorage.getItem(UPGRADE_OFFERED_KEY) === '1') return;
+    window.sessionStorage.setItem(UPGRADE_OFFERED_KEY, '1');
+  } catch (_error) { /* ignore */ }
+  openUpgradeModal();
+}
+
+function openLoginScreen() {
+  setStatus('auth-status');
+  showScreen('login');
+}
+
+function isExistingAccountError(error) {
+  const msg = String(error?.message || error?.code || '').toLowerCase();
+  return /already|registered|exists|linked|identity|taken/i.test(msg);
+}
+
 async function initialRoute() {
   await restoreStoredSession();
+  if (!state.session) {
+    try {
+      await ensureGuestSession();
+    } catch (err) {
+      console.warn('[guest-session]', err);
+    }
+  }
+  await consumeGuestClaimIfNeeded();
   await delay(SPLASH_MS);
   await loadAccess();
-  if (state.session) {
-    await ensureEmailConsent();
-    registerPushIfNeeded();
-  }
+  await ensureEmailConsent();
+  registerPushIfNeeded();
   renderTiles();
   renderSubscriptionActions();
   showScreen('tiles');
@@ -1032,9 +1192,11 @@ async function initialRoute() {
 
 async function routeAfterLogin() {
   if (!state.session) {
-    showScreen('login');
-    return;
+    try {
+      await ensureGuestSession();
+    } catch (_err) { /* ignore */ }
   }
+  await consumeGuestClaimIfNeeded();
   await loadAccess();
   await ensureEmailConsent();
   registerPushIfNeeded();
@@ -1114,10 +1276,8 @@ function clearStoredSession() {
 }
 
 async function loadAccess() {
-  state.subscriberApps = new Set();
   state.groupApps = new Set();
   state.appleApps = new Set();
-  state.webSubActive = false;
   state.appleSubActive = false;
   state.activeGroupIds = [];
   state.entitlementLoadError = false;
@@ -1126,37 +1286,22 @@ async function loadAccess() {
 
   try {
     const userId = state.session.user.id;
-    const [subscribersResult, groupMembersResult, appleResult] = await Promise.all([
-      supabase
-        .from('subscribers')
-        .select('app, subscribed')
-        .eq('user_id', userId)
-        .eq('subscribed', true),
+    const [groupMembersResult, appleResult] = await Promise.all([
       supabase
         .from('group_members')
         .select('group_id, status')
         .eq('user_id', userId)
         .eq('status', 'active'),
-      // Neue Tabelle — kann fehlen bevor die Migration eingespielt wurde.
       supabase
         .from('apple_subscriptions')
         .select('entitlement, status, expires_at, selected_apps')
         .eq('user_id', userId)
     ]);
 
-    if (subscribersResult.error) throw subscribersResult.error;
     if (groupMembersResult.error) throw groupMembersResult.error;
-    // apple_subscriptions-Fehler nicht als fatal behandeln.
     if (appleResult.error) {
       console.warn('[apple-subs] read failed', appleResult.error.message);
     }
-
-    state.subscriberApps = new Set(
-      (subscribersResult.data || [])
-        .map((row) => appKeyFromValue(row.app))
-        .filter(Boolean)
-    );
-    state.webSubActive = state.subscriberApps.size > 0;
 
     state.activeGroupIds = (groupMembersResult.data || [])
       .filter((row) => row.status === 'active' && row.group_id)
@@ -1166,7 +1311,6 @@ async function loadAccess() {
       await loadGroupApps(state.activeGroupIds);
     }
 
-    // Apple-Entitlements auswerten
     const nowIso = new Date().toISOString();
     const activeAppleRows = (appleResult.data || []).filter((row) => {
       if (!row) return false;
@@ -1190,26 +1334,26 @@ async function loadAccess() {
       }
     });
 
-    // Fallback (06.08.2026): Bei RENEWAL-Events schrieb der Webhook die
-    // App-Auswahl nicht in apple_subscriptions (selected_apps blieb leer) —
-    // dann gilt die Auswahl aus apple_subscription_intents, die der
-    // Kauf-Flow vor dem Kauf gespeichert hat.
-    const brauchtIntent = activeAppleRows.some((row) => {
-      const ent = String(row.entitlement || '').toLowerCase();
-      return ent !== 'all' && (!Array.isArray(row.selected_apps) || row.selected_apps.length === 0);
-    });
-    if (brauchtIntent) {
+    // Fallback: Bei 1-/2-App-Abos ohne selected_apps gilt zuerst der
+    // gespeicherte Intent, danach die letzte Auswahl auf diesem Gerät —
+    // damit nach dem Kauf keine leeren Schlösser bleiben.
+    const brauchtAuswahl = state.appleSubActive
+      && !state.appleApps.has('all')
+      && state.appleApps.size === 0;
+    if (brauchtAuswahl) {
       const { data: intentRow } = await supabase
         .from('apple_subscription_intents')
         .select('selected_apps')
         .eq('user_id', userId)
         .maybeSingle();
-      if (intentRow && Array.isArray(intentRow.selected_apps)) {
-        intentRow.selected_apps.forEach((k) => {
-          const appKey = appKeyFromValue(k);
-          if (appKey) state.appleApps.add(appKey);
-        });
-      }
+      const fromIntent = (intentRow && Array.isArray(intentRow.selected_apps))
+        ? intentRow.selected_apps
+        : [];
+      const fallbackApps = fromIntent.length ? fromIntent : readRememberedSelectedApps();
+      fallbackApps.forEach((k) => {
+        const appKey = appKeyFromValue(k);
+        if (appKey) state.appleApps.add(appKey);
+      });
     }
   } catch (_error) {
     state.entitlementLoadError = true;
@@ -1335,10 +1479,8 @@ function createActionText(text, className = '') {
 }
 
 function hasAppAccess(app) {
-  return state.subscriberApps.has('all')
-    || state.groupApps.has('all')
+  return state.groupApps.has('all')
     || state.appleApps.has('all')
-    || state.subscriberApps.has(app.key)
     || state.groupApps.has(app.key)
     || state.appleApps.has(app.key);
 }
@@ -1375,35 +1517,9 @@ function renderSubscriptionActions() {
   const host = byId('sub-actions');
   host.textContent = '';
   host.className = 'subscription-actions';
+  renderEmailSettingsLink();
 
-  const loggedIn = !!state.session;
-
-  const appendStatus = (message) => {
-    const box = document.createElement('div');
-    box.className = 'subscription-status';
-    box.innerHTML = message;
-    host.append(box);
-  };
-
-  // Priorität 1: aktives Web-Abo (Stripe) — der Kauf bleibt gesperrt,
-  // aber die Abo-Optionen (In-App-Käufe) bleiben sichtbar.
-  // Apple-Review 08.08.2026, 2.1(b) "unable to view in app purchase":
-  // das Demo-Konto hatte ein aktives Web-Abo, damit war die Paywall
-  // unerreichbar. updatePurchaseButton() sperrt den Kauf weiterhin.
-  if (loggedIn && state.webSubActive) {
-    appendStatus('<strong>Abo aktiv</strong><br>Über deinen clar-Web-Account abgeschlossen.');
-    const view = document.createElement('button');
-    view.type = 'button';
-    view.className = 'billing-button';
-    view.textContent = 'Abo-Optionen ansehen';
-    view.addEventListener('click', openPaywall);
-    host.append(view);
-    appendAccountButtons(host);
-    return;
-  }
-
-  // Priorität 2: aktives Apple-Abo — Verwalten via App Store.
-  if (loggedIn && state.appleSubActive) {
+  if (state.appleSubActive) {
     const manage = document.createElement('button');
     manage.type = 'button';
     manage.className = 'billing-button';
@@ -1414,7 +1530,6 @@ function renderSubscriptionActions() {
     return;
   }
 
-  // Sonst: Paywall anbieten.
   const openBtn = document.createElement('button');
   openBtn.type = 'button';
   openBtn.className = 'billing-button';
@@ -1476,11 +1591,14 @@ async function handleDeleteAccount(event) {
     state.session = null;
     state.pushRegistered = false;
     clearStoredSession();
-    window.setTimeout(() => {
+    clearGuestClaim();
+    window.setTimeout(async () => {
       closeDeleteAccountModal();
-      showScreen('login');
+      try { await ensureGuestSession(); } catch (_err) { /* ignore */ }
+      await loadAccess();
       renderTiles();
       renderSubscriptionActions();
+      showScreen('tiles');
     }, 1200);
   } catch (err) {
     console.error('[delete-account]', err);
@@ -1494,18 +1612,22 @@ function makeAuthButton() {
   btn.type = 'button';
   btn.className = 'billing-button';
   btn.id = 'open-login';
-  btn.textContent = state.session ? 'Abmelden' : 'Anmelden';
+  const namedAccount = !!state.session && !isAnonymousUser();
+  btn.textContent = namedAccount ? 'Abmelden' : 'Konto anlegen';
   btn.addEventListener('click', async () => {
-    if (state.session) {
+    if (namedAccount) {
       await supabase.auth.signOut();
       state.session = null;
       state.pushRegistered = false;
       clearStoredSession();
+      clearGuestClaim();
+      try { await ensureGuestSession(); } catch (_err) { /* ignore */ }
       await loadAccess();
       renderTiles();
       renderSubscriptionActions();
+      showScreen('tiles');
     } else {
-      showScreen('login');
+      openLoginScreen();
     }
   });
   return btn;
@@ -1593,8 +1715,25 @@ function wireEvents() {
   });
   byId('open-consent-edit').addEventListener('click', async (event) => {
     event.preventDefault();
-    if (!state.session?.user?.id) return;
+    if (!hasUsableEmail()) return;
     await openConsentModal({ allowClose: true });
+  });
+
+  byId('close-login').addEventListener('click', async () => {
+    if (!state.session) {
+      try { await ensureGuestSession(); } catch (_err) { /* ignore */ }
+    }
+    showScreen('tiles');
+  });
+
+  byId('upgrade-now').addEventListener('click', () => {
+    closeUpgradeModal();
+    openLoginScreen();
+  });
+  byId('upgrade-later').addEventListener('click', closeUpgradeModal);
+  byId('close-upgrade').addEventListener('click', closeUpgradeModal);
+  byId('upgrade-modal').addEventListener('click', (event) => {
+    if (event.target.id === 'upgrade-modal') closeUpgradeModal();
   });
 
   byId('close-paywall').addEventListener('click', closePaywall);
@@ -1637,6 +1776,20 @@ function wireEvents() {
 
     setBusy(button, true, 'Erstellen...');
     try {
+      rememberGuestClaim(state.session);
+      if (isAnonymousUser()) {
+        const { data, error } = await supabase.auth.updateUser({ email, password });
+        if (error) {
+          if (!isExistingAccountError(error)) throw error;
+          await signIn(email, password);
+          await routeAfterLogin();
+          return;
+        }
+        state.session = data.session || (await supabase.auth.getSession()).data.session;
+        storeSession(state.session);
+        await routeAfterLogin();
+        return;
+      }
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
       const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
@@ -1657,12 +1810,20 @@ function wireEvents() {
     button.textContent = 'Weiterleitung zu Apple…';
     setStatus('auth-status');
     try {
+      rememberGuestClaim(state.session);
+      if (isAnonymousUser()) {
+        const { error: linkError } = await supabase.auth.linkIdentity({
+          provider: 'apple',
+          options: { redirectTo: window.location.origin }
+        });
+        if (!linkError) return;
+        if (!isExistingAccountError(linkError)) throw linkError;
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: { redirectTo: window.location.origin }
       });
       if (error) throw error;
-      // Bei Erfolg navigiert der Browser weg — kein weiterer Code nötig.
     } catch (error) {
       setStatus('auth-status', error.message || 'Apple-Anmeldung fehlgeschlagen.', true);
       button.innerHTML = originalHtml;
@@ -1683,6 +1844,7 @@ function wireEvents() {
     setStatus('auth-status');
 
     try {
+      rememberGuestClaim(state.session);
       await signIn(byId('auth-email').value.trim(), byId('auth-password').value);
       await routeAfterLogin();
     } catch (error) {
@@ -1698,6 +1860,7 @@ function wireEvents() {
     setBusy(button, true, 'Anmelden...');
     setStatus('reviewer-status');
     try {
+      rememberGuestClaim(state.session);
       await signIn(byId('reviewer-email').value.trim(), byId('reviewer-password').value);
       closeReviewerModal();
       await routeAfterLogin();
@@ -1709,8 +1872,10 @@ function wireEvents() {
   });
 
   supabase.auth.onAuthStateChange((_event, session) => {
+    const prevId = state.session?.user?.id;
     state.session = session;
     if (session) {
+      if (prevId && prevId !== session.user.id) state.pushRegistered = false;
       storeSession(session);
       registerPushIfNeeded();
     } else {
