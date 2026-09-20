@@ -1,7 +1,7 @@
 // trial-ending-reminder — Mitteilung an die Testenden, dass ihr Zugang endet.
 //
-// Gedacht für den 25. Oktober 2026, sechs Tage vor dem Ende der Aktion
-// «clar kostenlos bis 31. Oktober».
+// Gedacht für den 25. Januar 2027, sechs Tage vor dem Ende der Aktion
+// «clar kostenlos bis 31. Januar 2027».
 //
 // WAS SIE TUT
 //   Sucht alle Konten mit subscription_plan = 'trial' und noch aktivem Zugang,
@@ -9,11 +9,20 @@
 //   public.campaign_emails. Wer dort schon steht, bekommt nichts mehr — die
 //   Funktion kann also gefahrlos mehrfach laufen.
 //
+// ZWEI FASSUNGEN JE NACH EINWILLIGUNG (public.email_consent)
+//   always / subscription_only → vollständige Mail, mit Preisabsatz
+//   never / keine Antwort      → dieselbe Mail OHNE Preisabsatz; übrig bleibt
+//                                eine reine Mitteilung über den Kontostand
+//   Betriebsmails sind von der Einwilligung nicht erfasst — die Information,
+//   dass der Zugang endet, darf deshalb an alle gehen. Nur der werbende Teil
+//   hängt an der Zustimmung.
+//
 // AUFRUF
 //   POST mit Header  Authorization: Bearer <CAMPAIGN_CRON_TOKEN>
 //   Body (alles freiwillig):
 //     { "dry": true }              → verschickt NICHTS, listet nur die Empfänger
 //     { "test": "du@example.com" } → verschickt genau eine Mail an diese Adresse
+//     { "test": "…", "ohnePreise": true } → dieselbe Probe in der kurzen Fassung
 //
 // NÖTIGE SECRETS (Supabase → Edge Functions → Secrets; trägt Rainer ein)
 //   RESEND_API_KEY        Schlüssel von resend.com
@@ -30,10 +39,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const KIND = "trial-ending-2026-10";
-const ENDE = "31. Oktober";
+const KIND = "trial-ending-2027-01";
+const ENDE = "31. Januar";
 
-function mailHtml(): string {
+// Wer in public.email_consent «never» gewählt hat — oder gar nicht geantwortet
+// hat — bekommt die Mail OHNE den Absatz mit den Preisen. Übrig bleibt eine
+// reine Mitteilung über den Kontostand, und die darf immer raus.
+function preisAbsatz(): string {
+  return `
+    <p style="font-size:14px;color:#444441;line-height:1.7;margin:0 0 20px">
+      Wenn du weitermachen möchtest, kannst du ein Abo wählen — eine App ab
+      CHF 3.90 im Monat, alle vier für CHF 9.90, Familien-Sharing für fünf
+      Personen inbegriffen.
+    </p>
+`;
+}
+
+function mailHtml(mitPreisen: boolean): string {
   // Bewusst im Stil der bestehenden Bestätigungsmail gehalten:
   // schwarze Kopfzeile, ruhiger Text, ein Knopf.
   return `
@@ -55,12 +77,7 @@ function mailHtml(): string {
       erhalten.
     </p>
 
-    <p style="font-size:14px;color:#444441;line-height:1.7;margin:0 0 20px">
-      Wenn du weitermachen möchtest, kannst du ein Abo wählen — eine App ab
-      CHF 3.90 im Monat, alle vier für CHF 9.90, Familien-Sharing für fünf
-      Personen inbegriffen.
-    </p>
-
+${mitPreisen ? preisAbsatz() : ""}
     <a href="https://home.lautini.ch" style="display:inline-block;background:#1a1a18;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:500">Zu meinen clar-Apps</a>
 
     <p style="font-size:14px;color:#444441;line-height:1.7;margin:24px 0 0">
@@ -121,11 +138,17 @@ serve(async (req) => {
           from: MAIL_FROM,
           to: [einzeltest],
           subject: `Dein clar-Zugang läuft am ${ENDE} aus`,
-          html: mailHtml(),
+          html: mailHtml(body.ohnePreise !== true),
         }),
       });
       const text = await r.text();
-      return antwort({ modus: "Einzeltest", an: einzeltest, status: r.status, antwort: text.slice(0, 300) });
+      return antwort({
+        modus: "Einzeltest",
+        an: einzeltest,
+        fassung: body.ohnePreise === true ? "ohne Preisabsatz" : "vollständig",
+        status: r.status,
+        antwort: text.slice(0, 300),
+      });
     }
 
     // ── Empfänger bestimmen ──
@@ -143,6 +166,26 @@ serve(async (req) => {
       if (r.user_id && r.email) proPerson.set(r.user_id, r.email);
     }
 
+    // ── Einwilligung nachschlagen ──
+    // public.email_consent ist für alle vier clar-Apps dieselbe Tabelle.
+    // «always» und «subscription_only» bekommen die vollständige Mail —
+    // Letztere, weil die laufende Testphase genau der Zeitraum ist, für den
+    // sie zugestimmt haben, und die Mail dessen Ende ankündigt.
+    // «never» und alle ohne Antwort bekommen sie ohne den Preisabsatz.
+    const { data: einwilligungen } = await admin
+      .from("email_consent")
+      .select("user_id, consent_level")
+      .in("user_id", [...proPerson.keys()]);
+    const stufe = new Map<string, string>();
+    for (const e of einwilligungen ?? []) {
+      const r = e as { user_id: string; consent_level: string };
+      stufe.set(r.user_id, r.consent_level);
+    }
+    const darfPreiseSehen = (userId: string) => {
+      const s = stufe.get(userId);
+      return s === "always" || s === "subscription_only";
+    };
+
     // Wer wurde schon benachrichtigt?
     const { data: bereits } = await admin
       .from("campaign_emails")
@@ -153,12 +196,15 @@ serve(async (req) => {
     const offen = [...proPerson.entries()].filter(([id]) => !schonVerschickt.has(id));
 
     if (trockenlauf) {
+      const mitPreisen = offen.filter(([id]) => darfPreiseSehen(id));
+      const ohnePreise = offen.filter(([id]) => !darfPreiseSehen(id));
       return antwort({
         modus: "Trockenlauf — es wurde nichts verschickt",
         testkonten_gesamt: proPerson.size,
         bereits_benachrichtigt: schonVerschickt.size,
         wuerden_jetzt_mail_bekommen: offen.length,
-        empfaenger: offen.map(([, mail]) => mail),
+        vollstaendige_mail_mit_preisen: mitPreisen.map(([, m]) => m),
+        nur_mitteilung_ohne_preise: ohnePreise.map(([, m]) => m),
       });
     }
 
@@ -166,8 +212,10 @@ serve(async (req) => {
 
     // ── Verschicken ──
     let verschickt = 0;
+    let davonOhnePreise = 0;
     const fehler: string[] = [];
     for (const [userId, mail] of offen) {
+      const mitPreisen = darfPreiseSehen(userId);
       try {
         const r = await fetch("https://api.resend.com/emails", {
           method: "POST",
@@ -176,7 +224,7 @@ serve(async (req) => {
             from: MAIL_FROM,
             to: [mail],
             subject: `Dein clar-Zugang läuft am ${ENDE} aus`,
-            html: mailHtml(),
+            html: mailHtml(mitPreisen),
           }),
         });
         if (!r.ok) {
@@ -185,6 +233,7 @@ serve(async (req) => {
         }
         await admin.from("campaign_emails").insert({ user_id: userId, email: mail, kind: KIND });
         verschickt++;
+        if (!mitPreisen) davonOhnePreise++;
         // Resend erlaubt im Standardtarif rund 2 Mails pro Sekunde
         await new Promise((f) => setTimeout(f, 600));
       } catch (e) {
@@ -195,6 +244,7 @@ serve(async (req) => {
     return antwort({
       modus: "Versand",
       verschickt,
+      davon_ohne_preisabsatz: davonOhnePreise,
       uebersprungen_weil_schon_benachrichtigt: schonVerschickt.size,
       fehler,
     });
