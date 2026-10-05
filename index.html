@@ -102,6 +102,8 @@ button:disabled{cursor:not-allowed;opacity:.58;}
 .paywall-submit{width:100%;min-height:3.25rem;border:0;border-radius:14px;background:var(--green);color:var(--paper);font-weight:800;}
 .paywall-submit:disabled{background:var(--line);color:var(--muted);box-shadow:none;}
 .paywall-status{min-height:1.25rem;text-align:center;}
+.restore-button{appearance:none;display:block;margin:.35rem auto 0;min-height:44px;padding:.5rem 1rem;border:0;background:transparent;color:var(--green);font:inherit;font-size:.92rem;font-weight:650;text-decoration:underline;}
+.restore-button:disabled{opacity:.55;}
 .paywall-legal{margin:.25rem auto 0;max-width:34rem;text-align:center;font-size:.72rem;line-height:1.45;color:var(--muted);}
 .paywall-legal a{color:var(--green);text-decoration:underline;}
 .modal-backdrop{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(28,46,28,.38);padding:1.25rem;}
@@ -166,70 +168,6 @@ body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
     <button class="logo" type="button" data-logo-tap aria-label="clar">clar·</button>
   </section>
 
-  <section id="login-screen" class="screen" aria-labelledby="login-title">
-    <div class="stack center">
-      <button class="logo small" type="button" data-logo-tap aria-label="clar">clar·</button>
-      <div class="card">
-        <div class="stack">
-          <div>
-            <h1 id="login-title" class="title">Konto anlegen</h1>
-            <p id="login-copy" class="copy">Konto anlegen, damit du das Abo auf allen Geräten nutzen kannst.</p>
-            <p class="copy" style="opacity:.45;font-size:.75rem;margin-top:.25rem;">App-Version (iOS)</p>
-          </div>
-
-          <button id="apple-signin" class="apple-button" type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18" fill="currentColor">
-              <path d="M16.365 12.79c-.024-2.448 1.998-3.622 2.089-3.68-1.137-1.663-2.907-1.891-3.537-1.917-1.506-.152-2.939.887-3.703.887-.762 0-1.943-.865-3.194-.842-1.643.024-3.158.955-4.003 2.426-1.707 2.961-.436 7.343 1.227 9.745.813 1.176 1.783 2.497 3.055 2.45 1.226-.049 1.69-.793 3.172-.793 1.481 0 1.899.793 3.196.769 1.32-.024 2.156-1.199 2.963-2.379.933-1.365 1.317-2.687 1.34-2.755-.029-.013-2.571-.986-2.605-3.911zM13.93 5.61c.676-.82 1.132-1.958 1.007-3.093-.973.04-2.152.649-2.85 1.467-.626.726-1.174 1.885-1.027 2.997 1.086.084 2.194-.552 2.87-1.371z"/>
-            </svg>
-            Mit Apple anmelden
-          </button>
-
-          <div class="divider-or" aria-hidden="true"><span>oder</span></div>
-
-          <button id="email-toggle" class="email-toggle" type="button">Mit E-Mail fortfahren</button>
-
-          <form id="auth-form" class="form" style="display:none;">
-            <label class="field">
-              <span class="label">Email</span>
-              <input id="auth-email" class="input" type="email" autocomplete="email" required>
-            </label>
-            <label class="field">
-              <span class="label">Passwort</span>
-              <span class="input-row">
-                <input id="auth-password" class="input password-input" type="password" autocomplete="current-password" required>
-                <button class="eye-button" type="button" data-toggle-password="auth-password" aria-label="Passwort anzeigen">
-                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke-width="1.8"/>
-                  </svg>
-                </button>
-              </span>
-            </label>
-            <label id="confirm-field" class="field" style="display:none;">
-              <span class="label">Passwort wiederholen</span>
-              <span class="input-row">
-                <input id="auth-password-confirm" class="input password-input" type="password" autocomplete="new-password">
-                <button class="eye-button" type="button" data-toggle-password="auth-password-confirm" aria-label="Passwort anzeigen">
-                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke-width="1.8"/>
-                  </svg>
-                </button>
-              </span>
-            </label>
-            <div style="display:flex;gap:.6rem;">
-              <button id="register-submit" class="primary" type="button" style="flex:1;background:var(--green);color:var(--paper);">Konto erstellen</button>
-              <button id="login-submit" class="primary" type="submit" style="flex:1;background:transparent;color:var(--green);border:2px solid var(--green);">Anmelden</button>
-            </div>
-          </form>
-
-          <p id="auth-status" class="status" role="status"></p>
-          <button id="close-login" class="login-back" type="button">Weiter ohne Konto</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <section id="entitlement-screen" class="screen" aria-labelledby="entitlement-title">
     <div class="stack center">
       <button class="logo small" type="button" data-logo-tap aria-label="clar">clar·</button>
@@ -277,7 +215,6 @@ body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
         <div>
           <h1 id="paywall-title" class="title">clar·Apps abonnieren</h1>
           <p class="copy">Wähle dein Abo. Der Kauf erfolgt sicher über deinen Apple-Account.</p>
-          <p class="copy" style="margin-top:.4rem;font-size:.82rem;">Ein Konto ist optional. Nach dem Kauf kannst du eines anlegen, damit du das Abo auf allen Geräten nutzen kannst.</p>
         </div>
         <button id="close-paywall" class="paywall-close" type="button" aria-label="Schliessen">x</button>
       </header>
@@ -349,6 +286,7 @@ body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
       </section>
 
       <button id="checkout-submit" class="paywall-submit" type="button" disabled>Abonnieren</button>
+      <button id="restore-purchases" class="restore-button" type="button">Käufe wiederherstellen</button>
       <p id="paywall-status" class="status paywall-status" role="status"></p>
       <p class="paywall-legal">
         Zahlung über deinen Apple-Account. Das gewählte Abo verlängert sich automatisch um denselben Zeitraum zum angezeigten Preis, sofern es nicht mindestens 24&nbsp;Stunden vor Ablauf gekündigt wird. Verwaltung &amp; Kündigung jederzeit in den Apple-ID-Einstellungen.
@@ -426,42 +364,28 @@ body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
   <div class="modal">
     <div class="modal-head">
       <div>
-        <h2 id="delete-account-title" class="title">Konto endgültig löschen</h2>
+        <h2 id="delete-account-title" class="title">Daten endgültig löschen</h2>
         <p class="copy">Dieser Schritt kann nicht rückgängig gemacht werden.</p>
       </div>
       <button id="close-delete-account" class="close" type="button" aria-label="Schliessen">x</button>
     </div>
     <form id="delete-account-form" class="form">
       <p class="delete-hint">
-        Dein clar-Konto und alle deine Daten in clar·markt, clar·heim, clar·tag und
+        Alle deine Daten in clar·markt, clar·heim, clar·tag und
         clar·log werden sofort und unwiderruflich gelöscht.
       </p>
       <p class="delete-hint">
         <strong>Wichtig bei aktivem Abo:</strong> Ein über den App&nbsp;Store abgeschlossenes
-        Abo wird durch die Kontolöschung nicht gekündigt. Kündige es in den
+        Abo wird durch das Löschen nicht gekündigt. Kündige es in den
         iOS-Einstellungen unter „Abos&#8203;", sonst läuft es weiter.
       </p>
       <label class="field">
         <span class="label">Zur Bestätigung „LÖSCHEN" eintippen</span>
         <input id="delete-account-confirm" class="input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false">
       </label>
-      <button id="delete-account-submit" class="delete-confirm-button" type="submit" disabled>Konto endgültig löschen</button>
+      <button id="delete-account-submit" class="delete-confirm-button" type="submit" disabled>Daten endgültig löschen</button>
       <p id="delete-account-status" class="status" role="status"></p>
     </form>
-  </div>
-</div>
-
-<div id="upgrade-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="upgrade-title">
-  <div class="modal">
-    <div class="modal-head">
-      <div>
-        <h2 id="upgrade-title" class="title">Auf anderen Geräten nutzen?</h2>
-        <p class="copy">Konto anlegen, damit du das Abo auf allen Geräten nutzen kannst.</p>
-      </div>
-      <button id="close-upgrade" class="close" type="button" aria-label="Schliessen">x</button>
-    </div>
-    <button id="upgrade-now" class="primary" type="button">Konto anlegen</button>
-    <button id="upgrade-later" class="upgrade-later" type="button">Später</button>
   </div>
 </div>
 
@@ -473,7 +397,6 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const SESSION_STORAGE_KEY = 'clar.supabase.session';
 const GUEST_CLAIM_KEY = 'clar.guest.claim';
 const LAST_SELECTED_APPS_KEY = 'clar.last_selected_apps';
-const UPGRADE_OFFERED_KEY = 'clar.upgrade.offered';
 const SPLASH_MS = 1500;
 
 // ─── Despia Bridge ──────────────────────────────────────────────────────────
@@ -602,7 +525,6 @@ const appOptions = [
 
 const screens = {
   splash: document.querySelector('#splash-screen'),
-  login: document.querySelector('#login-screen'),
   entitlement: document.querySelector('#entitlement-screen'),
   tiles: document.querySelector('#tiles-screen'),
   app: document.querySelector('#app-screen'),
@@ -1026,7 +948,6 @@ async function startPurchase() {
   renderTiles();
   if (state.appleSubActive) {
     closePaywall();
-    maybeOfferAccountUpgrade();
   } else {
     renderPaywall();
   }
@@ -1042,6 +963,73 @@ async function pollForAppleActivation(timeoutMs) {
   return false;
 }
 
+// ─── Käufe wiederherstellen (Apple 3.1.1) ────────────────────────────────────
+// Eigener, sichtbarer Knopf. Offizieller Despia-Weg: getpurchasehistory:// —
+// der Wrapper fragt den App Store ab und legt das Ergebnis in
+// window.restoredData ab (Liste mit productId, isActive, …).
+function readPurchaseHistory(timeoutMs = 12000) {
+  return new Promise((resolve) => {
+    try { window.restoredData = undefined; } catch (_error) { /* ignore */ }
+    if (!despia('getpurchasehistory://')) { resolve(null); return; }
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      let data = window.restoredData;
+      if (data === undefined || data === null) {
+        if (Date.now() - startedAt < timeoutMs) return;
+        data = [];
+      }
+      window.clearInterval(timer);
+      if (typeof data === 'string') {
+        try { data = JSON.parse(data); } catch (_error) { data = []; }
+      }
+      resolve(Array.isArray(data) ? data : []);
+    }, 250);
+  });
+}
+
+function hasActiveClarPurchase(history) {
+  return (history || []).some((item) =>
+    item && item.isActive === true &&
+    (!item.productId || String(item.productId).indexOf('ch.lautini.clar') === 0));
+}
+
+async function restorePurchases() {
+  if (state.paywall.restoreBusy || state.paywall.purchaseBusy) return;
+  const button = byId('restore-purchases');
+  state.paywall.restoreBusy = true;
+  setBusy(button, true, 'Wird geprüft…');
+  setStatus('paywall-status', 'Käufe werden wiederhergestellt…');
+  try {
+    await ensureGuestSession();
+    const history = await readPurchaseHistory();
+    if (history === null) {
+      setStatus('paywall-status', 'Käufe lassen sich nur in der clar-App aus dem App Store wiederherstellen.', true);
+      return;
+    }
+    const found = hasActiveClarPurchase(history);
+    await loadAccess();
+    if (!state.appleSubActive && found) {
+      setStatus('paywall-status', 'Abo gefunden — wird freigeschaltet…');
+      await pollForAppleActivation(20000);
+    }
+    renderSubscriptionActions();
+    renderTiles();
+    if (state.appleSubActive) {
+      closePaywall();
+    } else if (found) {
+      setStatus('paywall-status', 'Dein Abo wurde gefunden, ist aber noch nicht freigeschaltet. Bitte versuche es in einer Minute noch einmal.', true);
+    } else {
+      setStatus('paywall-status', 'Für diese Apple-ID wurde kein aktives Abo gefunden.');
+    }
+  } catch (err) {
+    console.warn('[restore]', err);
+    setStatus('paywall-status', 'Wiederherstellen ist gerade nicht möglich. Bitte versuche es noch einmal.', true);
+  } finally {
+    state.paywall.restoreBusy = false;
+    setBusy(button, false);
+  }
+}
+
 // Offizieller Despia-Callback: Store hat die Transaktion client-seitig
 // bestätigt. Zugriff wird erst nach Webhook-Bestätigung (Supabase) gewährt —
 // hier nur erneut pollen, falls die 20s im Kauffluss nicht gereicht haben.
@@ -1053,7 +1041,6 @@ window.onRevenueCatPurchase = async () => {
   renderTiles();
   if (state.appleSubActive) {
     closePaywall();
-    maybeOfferAccountUpgrade();
   } else {
     renderPaywall();
   }
@@ -1142,28 +1129,6 @@ function renderEmailSettingsLink() {
   link.classList.toggle('hidden', !show);
   const sep = link.previousElementSibling;
   if (sep && sep.tagName === 'SPAN') sep.classList.toggle('hidden', !show);
-}
-
-function openUpgradeModal() {
-  byId('upgrade-modal').classList.add('active');
-}
-
-function closeUpgradeModal() {
-  byId('upgrade-modal').classList.remove('active');
-}
-
-function maybeOfferAccountUpgrade() {
-  if (!isAnonymousUser() || !state.appleSubActive) return;
-  try {
-    if (window.sessionStorage.getItem(UPGRADE_OFFERED_KEY) === '1') return;
-    window.sessionStorage.setItem(UPGRADE_OFFERED_KEY, '1');
-  } catch (_error) { /* ignore */ }
-  openUpgradeModal();
-}
-
-function openLoginScreen() {
-  setStatus('auth-status');
-  showScreen('login');
 }
 
 function isExistingAccountError(error) {
@@ -1536,18 +1501,25 @@ function renderSubscriptionActions() {
   openBtn.textContent = 'Abo abschliessen';
   openBtn.addEventListener('click', openPaywall);
   host.append(openBtn);
+  const restoreBtn = document.createElement('button');
+  restoreBtn.type = 'button';
+  restoreBtn.className = 'billing-button';
+  restoreBtn.textContent = 'Käufe wiederherstellen';
+  restoreBtn.addEventListener('click', () => { openPaywall(); restorePurchases(); });
+  host.append(restoreBtn);
   appendAccountButtons(host);
 }
 
-// Apple 5.1.1(v): Konto-Löschung muss in der App auffindbar sein — für alle
-// eingeloggten Nutzer, unabhängig vom Abo-Status.
+// Daten-Löschung muss in der App auffindbar sein, unabhängig vom Abo-Status.
+// Die iOS-App kennt kein Konto und keine E-Mail-Anmeldung (Entscheid 5.10.2026):
+// iOS und Web-App sind getrennt.
 function appendAccountButtons(host) {
-  host.append(makeAuthButton());
+  if (state.session && !isAnonymousUser()) host.append(makeAuthButton());
   if (state.session) {
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'billing-button danger';
-    del.textContent = 'Konto löschen';
+    del.textContent = 'Meine Daten löschen';
     del.addEventListener('click', openDeleteAccountModal);
     host.append(del);
   }
@@ -1570,7 +1542,7 @@ async function handleDeleteAccount(event) {
   if (byId('delete-account-confirm').value.trim() !== 'LÖSCHEN') return;
   const submit = byId('delete-account-submit');
   submit.disabled = true;
-  setStatus('delete-account-status', 'Konto wird gelöscht …');
+  setStatus('delete-account-status', 'Daten werden gelöscht …');
   try {
     const { data: sessionData } = await supabase.auth.getSession();
     const accessToken = sessionData?.session?.access_token;
@@ -1586,7 +1558,7 @@ async function handleDeleteAccount(event) {
     });
     const payload = await res.json().catch(() => ({}));
     if (!res.ok || payload.error) throw new Error(payload.error || ('Fehler ' + res.status));
-    setStatus('delete-account-status', 'Dein Konto wurde gelöscht.');
+    setStatus('delete-account-status', 'Deine Daten wurden gelöscht.');
     await supabase.auth.signOut().catch(() => {});
     state.session = null;
     state.pushRegistered = false;
@@ -1612,10 +1584,9 @@ function makeAuthButton() {
   btn.type = 'button';
   btn.className = 'billing-button';
   btn.id = 'open-login';
-  const namedAccount = !!state.session && !isAnonymousUser();
-  btn.textContent = namedAccount ? 'Abmelden' : 'Konto anlegen';
+  btn.textContent = 'Abmelden';
   btn.addEventListener('click', async () => {
-    if (namedAccount) {
+    {
       await supabase.auth.signOut();
       state.session = null;
       state.pushRegistered = false;
@@ -1626,8 +1597,6 @@ function makeAuthButton() {
       renderTiles();
       renderSubscriptionActions();
       showScreen('tiles');
-    } else {
-      openLoginScreen();
     }
   });
   return btn;
@@ -1719,23 +1688,6 @@ function wireEvents() {
     await openConsentModal({ allowClose: true });
   });
 
-  byId('close-login').addEventListener('click', async () => {
-    if (!state.session) {
-      try { await ensureGuestSession(); } catch (_err) { /* ignore */ }
-    }
-    showScreen('tiles');
-  });
-
-  byId('upgrade-now').addEventListener('click', () => {
-    closeUpgradeModal();
-    openLoginScreen();
-  });
-  byId('upgrade-later').addEventListener('click', closeUpgradeModal);
-  byId('close-upgrade').addEventListener('click', closeUpgradeModal);
-  byId('upgrade-modal').addEventListener('click', (event) => {
-    if (event.target.id === 'upgrade-modal') closeUpgradeModal();
-  });
-
   byId('close-paywall').addEventListener('click', closePaywall);
 
   document.querySelectorAll('[data-billing-option]').forEach((button) => {
@@ -1751,108 +1703,7 @@ function wireEvents() {
   });
 
   byId('checkout-submit').addEventListener('click', startPurchase);
-
-  byId('register-submit').addEventListener('click', async () => {
-    const button = byId('register-submit');
-    const confirmField = byId('confirm-field');
-    const confirmInput = byId('auth-password-confirm');
-    setStatus('auth-status', '');
-    const email = byId('auth-email').value.trim();
-    const password = byId('auth-password').value;
-    if (!email || !password) { setStatus('auth-status', 'Bitte Email und Passwort eingeben.', true); return; }
-
-    if (confirmField.style.display === 'none') {
-      confirmField.style.display = 'flex';
-      confirmInput.required = true;
-      confirmInput.focus();
-      return;
-    }
-
-    if (password !== confirmInput.value) {
-      setStatus('auth-status', 'Passwörter stimmen nicht überein.', true);
-      confirmInput.focus();
-      return;
-    }
-
-    setBusy(button, true, 'Erstellen...');
-    try {
-      rememberGuestClaim(state.session);
-      if (isAnonymousUser()) {
-        const { data, error } = await supabase.auth.updateUser({ email, password });
-        if (error) {
-          if (!isExistingAccountError(error)) throw error;
-          await signIn(email, password);
-          await routeAfterLogin();
-          return;
-        }
-        state.session = data.session || (await supabase.auth.getSession()).data.session;
-        storeSession(state.session);
-        await routeAfterLogin();
-        return;
-      }
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
-      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-      if (loginError) throw loginError;
-      state.session = loginData.session;
-      await routeAfterLogin();
-    } catch (err) {
-      setStatus('auth-status', err.message || 'Registrierung fehlgeschlagen.', true);
-    } finally {
-      setBusy(button, false, 'Konto erstellen');
-    }
-  });
-
-  byId('apple-signin').addEventListener('click', async () => {
-    const button = byId('apple-signin');
-    const originalHtml = button.innerHTML;
-    button.disabled = true;
-    button.textContent = 'Weiterleitung zu Apple…';
-    setStatus('auth-status');
-    try {
-      rememberGuestClaim(state.session);
-      if (isAnonymousUser()) {
-        const { error: linkError } = await supabase.auth.linkIdentity({
-          provider: 'apple',
-          options: { redirectTo: window.location.origin }
-        });
-        if (!linkError) return;
-        if (!isExistingAccountError(linkError)) throw linkError;
-      }
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: { redirectTo: window.location.origin }
-      });
-      if (error) throw error;
-    } catch (error) {
-      setStatus('auth-status', error.message || 'Apple-Anmeldung fehlgeschlagen.', true);
-      button.innerHTML = originalHtml;
-      button.disabled = false;
-    }
-  });
-
-  byId('email-toggle').addEventListener('click', () => {
-    byId('auth-form').style.display = '';
-    byId('email-toggle').style.display = 'none';
-    byId('auth-email').focus();
-  });
-
-  byId('auth-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const button = byId('login-submit');
-    setBusy(button, true, 'Anmelden...');
-    setStatus('auth-status');
-
-    try {
-      rememberGuestClaim(state.session);
-      await signIn(byId('auth-email').value.trim(), byId('auth-password').value);
-      await routeAfterLogin();
-    } catch (error) {
-      setStatus('auth-status', error.message || 'Anmeldung fehlgeschlagen.', true);
-    } finally {
-      setBusy(button, false, 'Anmelden');
-    }
-  });
+  byId('restore-purchases').addEventListener('click', restorePurchases);
 
   byId('reviewer-form').addEventListener('submit', async (event) => {
     event.preventDefault();
