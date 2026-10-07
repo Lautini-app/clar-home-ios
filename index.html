@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#2E5C3E">
+<meta name="theme-color" content="#1B2A4B">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&display=swap" rel="stylesheet">
 <title>clar</title>
 <style>
 :root{
@@ -14,6 +16,8 @@
   --line:#DAD6CC;
   --soft:#EBE6DC;
   --danger:#8B3A2B;
+  --navy:#1B2A4B;
+  --serif:"Lora",Georgia,"Times New Roman",serif;
   /* Safe-area — funktioniert nativ in WKWebView (Despia) und im Browser. */
   --sa-top:env(safe-area-inset-top);
   --sa-bottom:env(safe-area-inset-bottom);
@@ -31,7 +35,7 @@ button:disabled{cursor:not-allowed;opacity:.58;}
 .screen.active{display:flex;}
 .stack{display:flex;width:100%;max-width:24rem;flex-direction:column;align-items:stretch;gap:1rem;}
 .center{align-items:center;text-align:center;}
-.splash{background:var(--green);color:var(--paper);position:fixed;inset:0;z-index:10;}
+.splash{background:var(--navy);color:var(--paper);position:fixed;inset:0;z-index:10;}
 .splash .logo{color:var(--paper);}
 .logo{appearance:none;border:0;background:transparent;color:var(--green);font-size:4rem;font-weight:800;letter-spacing:-0.07em;line-height:0.9;text-align:center;}
 .logo.small{font-size:2.75rem;align-self:center;margin-bottom:.25rem;}
@@ -51,16 +55,25 @@ button:disabled{cursor:not-allowed;opacity:.58;}
 .primary{border:0;background:var(--green);color:var(--paper);}
 .status{min-height:1.25rem;color:var(--muted);font-size:.9rem;line-height:1.35;text-align:center;}
 .status.error{color:var(--danger);}
-.tiles{display:flex;width:100%;max-width:34rem;flex-direction:column;gap:.85rem;}
+.tiles{display:flex;width:100%;max-width:34rem;flex-direction:column;gap:.9rem;}
 .tile-section{width:100%;margin:.35rem 0 -.2rem;color:var(--muted);font-size:.73rem;font-weight:800;letter-spacing:.08em;text-align:left;text-transform:uppercase;}
-.tile{display:flex;min-height:5.85rem;align-items:center;justify-content:space-between;gap:1rem;border:1px solid var(--line);border-radius:14px;background:#fff;padding:1rem;text-decoration:none;color:var(--text);box-shadow:0 .65rem 1.7rem rgba(46,92,62,.08);}
-.tile:active{transform:scale(.99);}
-.tile-icon{display:grid;flex:0 0 auto;width:3rem;height:3rem;place-items:center;border-radius:.9rem;font-size:1.3rem;}
-.tile-body{display:flex;min-width:0;flex:1;align-items:center;gap:.85rem;text-align:left;}
+.tile{display:flex;min-height:5.6rem;align-items:center;justify-content:space-between;gap:1rem;border:1px solid rgba(27,42,75,.07);border-radius:20px;background:#fff;padding:1rem 1.1rem;text-decoration:none;color:var(--text);box-shadow:0 .5rem 1.6rem rgba(27,42,75,.08);transition:transform .12s ease;}
+.tile:active{transform:scale(.985);}
+.tile-icon{display:grid;flex:0 0 auto;width:3.2rem;height:3.2rem;place-items:center;border-radius:1rem;}
+.tile-icon svg{width:1.55rem;height:1.55rem;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.tile-body{display:flex;min-width:0;flex:1;align-items:center;gap:.95rem;text-align:left;}
 .tile-text{min-width:0;}
-.tile-name{font-size:1.35rem;font-weight:800;letter-spacing:-.04em;color:var(--green);}
+.tile-name{font-family:var(--serif);font-size:1.3rem;font-weight:700;letter-spacing:-.01em;color:var(--navy);}
 .tile-desc{margin-top:.2rem;color:var(--muted);font-size:.9rem;}
-.tile-action{display:flex;align-items:center;gap:.55rem;color:var(--green);font-size:1.65rem;font-weight:650;line-height:1;white-space:nowrap;}
+.tile-action{display:flex;align-items:center;gap:.55rem;color:var(--navy);line-height:1;white-space:nowrap;}
+.tile-action svg{width:1.3rem;height:1.3rem;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.55;}
+.hero{width:100%;display:flex;flex-direction:column;align-items:center;gap:.55rem;margin:-.5rem 0 .6rem;}
+.hero .dots{display:grid;grid-template-columns:repeat(2,1.05rem);gap:.28rem;}
+.hero .dots i{display:block;width:1.05rem;height:1.05rem;border-radius:50%;}
+.hero .brand{display:flex;align-items:center;gap:.8rem;}
+.hero .wordmark{font-family:var(--serif);font-size:2.6rem;font-weight:700;letter-spacing:-.02em;color:var(--navy);line-height:1;}
+.hero .tagline{font-family:var(--serif);font-size:1.35rem;font-weight:600;color:var(--navy);margin-top:.9rem;}
+.hero .sub{color:var(--muted);font-size:.92rem;}
 .soon-badge{display:inline-flex;align-items:center;border-radius:999px;background:var(--soft);padding:.15rem .45rem;color:var(--muted);font-size:.66rem;font-weight:800;letter-spacing:.02em;}
 .subscription-actions{display:flex;width:100%;max-width:34rem;flex-wrap:wrap;align-items:center;justify-content:center;gap:.35rem 1rem;margin-top:.1rem;}
 .subscription-status{width:100%;max-width:34rem;border:1px solid var(--line);border-radius:14px;background:#fff;padding:.85rem 1rem;text-align:center;color:var(--muted);font-size:.86rem;line-height:1.4;}
@@ -181,19 +194,21 @@ body.offline .app{padding-top:calc(2rem + var(--sa-top) + 2.6rem);}
   </section>
 
   <section id="app-screen" class="screen" style="padding:0;background:#fff;">
-    <div id="app-header" style="position:fixed;top:0;left:0;right:0;z-index:100;background:#2E5C3E;color:#F5F3EE;display:flex;align-items:center;padding:12px 16px;padding-top:calc(12px + var(--sa-top,0px));font-size:15px;font-weight:600;">
-      <button id="close-app-btn" style="background:none;border:none;color:#F5F3EE;font-size:15px;font-weight:600;cursor:pointer;padding:0;">← clar</button>
+    <div id="app-header" style="position:fixed;top:0;left:0;right:0;z-index:100;background:#1B2A4B;color:#FAF9F4;display:flex;align-items:center;padding:12px 16px;padding-top:calc(12px + var(--sa-top,0px));font-size:15px;font-weight:600;">
+      <button id="close-app-btn" style="background:none;border:none;color:#FAF9F4;font-size:15px;font-weight:600;cursor:pointer;padding:0;">← clar</button>
     </div>
     <iframe id="app-iframe" src="" style="position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;border:none;padding-top:calc(44px + var(--sa-top,0px));box-sizing:border-box;touch-action:manipulation;"></iframe>
   </section>
 
   <section id="tiles-screen" class="screen" aria-labelledby="tiles-title">
     <div class="stack center" style="max-width:34rem">
-      <div class="topbar">
-        <button class="logo" type="button" data-logo-tap aria-label="clar">clar·</button>
-      </div>
-      <div>
-        <h1 id="tiles-title" class="title">Deine clar·Apps</h1>
+      <div class="hero">
+        <button class="brand" type="button" data-logo-tap aria-label="clar" style="appearance:none;border:0;background:transparent">
+          <span class="dots" aria-hidden="true"><i style="background:#2f9968"></i><i style="background:#7a5db1"></i><i style="background:#d49419"></i><i style="background:#3e8bd1"></i></span>
+          <span class="wordmark">clar</span>
+        </button>
+        <h1 id="tiles-title" class="tagline">Deine clar·Apps</h1>
+        <p class="sub">Wähle, womit du weitermachen willst.</p>
       </div>
       <div id="tiles" class="tiles" aria-live="polite"></div>
       <div id="sub-actions" class="subscription-actions" aria-label="Abo Optionen"></div>
@@ -1409,8 +1424,9 @@ function createTile(app) {
   const desc = document.createElement('div');
   body.className = 'tile-body';
   icon.className = 'tile-icon';
-  icon.style.backgroundColor = `${app.color}20`;
-  icon.textContent = app.icon;
+  icon.style.backgroundColor = `${app.color}1f`;
+  icon.style.color = app.color;
+  icon.innerHTML = tileIconSvg(app.key);
   text.className = 'tile-text';
   name.className = 'tile-name';
   desc.className = 'tile-desc';
@@ -1431,11 +1447,20 @@ function createTile(app) {
 
   const action = document.createElement('div');
   action.className = 'tile-action';
-  action.appendChild(createActionText(isLocked ? '🔒' : '›'));
+  action.innerHTML = isLocked ? ICON_LOCK : ICON_CHEVRON;
   tile.append(body, action);
   return tile;
 }
 
+const ICON_LOCK = '<svg viewBox="0 0 24 24" aria-label="gesperrt"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+const ICON_CHEVRON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+function tileIconSvg(key) {
+  const k = String(key || '');
+  if (k.includes('markt')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>';
+  if (k.includes('heim')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+  if (k.includes('log')) return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>';
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
+}
 function createActionText(text, className = '') {
   const element = document.createElement('span');
   if (className) element.className = className;
