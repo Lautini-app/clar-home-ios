@@ -169,9 +169,28 @@ async function handleTransfer(evt: RevenueCatEvent["event"]) {
   return { ok: true, kind: "transfer", to: toId, from: sources };
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Käufe ausserhalb des Kauf-Knopfs (z. B. Angebotscode im App Store) kommen
+// mit einer anonymen ID ($RCAnonymousID:…). Dann eine Konto-UUID aus den
+// Aliassen nehmen; gibt es keine, holt die App den Stand später über
+// sync-apple-subscription ab.
+function resolveUserId(evt: RevenueCatEvent["event"]): string | null {
+  const candidates = [
+    evt.app_user_id,
+    evt.original_app_user_id || "",
+    ...asIdList(evt.aliases),
+  ];
+  return candidates.find((id) => id && UUID_RE.test(id)) ?? null;
+}
+
 async function handleEvent(evt: RevenueCatEvent["event"]) {
-  const userId = evt.app_user_id;
-  if (!userId) throw new Error("missing app_user_id");
+  if (!evt.app_user_id) throw new Error("missing app_user_id");
+  const userId = resolveUserId(evt);
+  if (!userId) {
+    console.warn("[rc-webhook] no account uuid yet, ignoring", evt.app_user_id, evt.type);
+    return { ok: true, ignored: true, reason: "anonymous app_user_id" };
+  }
 
   const entitlement = entitlementFromProduct(evt.product_id || "");
   if (!entitlement) {

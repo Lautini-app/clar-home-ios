@@ -1008,6 +1008,26 @@ function hasActiveClarPurchase(history) {
     (!item.productId || String(item.productId).indexOf('ch.lautini.clar') === 0));
 }
 
+async function syncAppleSubscription() {
+  if (!state.session?.access_token) return false;
+  try {
+    const res = await fetch(SUPABASE_URL + '/functions/v1/sync-apple-subscription', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + state.session.access_token,
+        'apikey': SUPABASE_ANON_KEY,
+      },
+      body: '{}',
+    });
+    if (!res.ok) console.warn('[sync-apple-subscription]', res.status);
+    return res.ok;
+  } catch (err) {
+    console.warn('[sync-apple-subscription]', err);
+    return false;
+  }
+}
+
 async function restorePurchases() {
   if (state.paywall.restoreBusy || state.paywall.purchaseBusy) return;
   const button = byId('restore-purchases');
@@ -1025,7 +1045,16 @@ async function restorePurchases() {
     await loadAccess();
     if (!state.appleSubActive && found) {
       setStatus('paywall-status', 'Abo gefunden — wird freigeschaltet…');
-      await pollForAppleActivation(20000);
+      // Käufe ausserhalb des Kauf-Knopfs (Angebotscode, App-Store-Abo-Seite,
+      // neues Gerät) hängen bei RevenueCat an einer anonymen ID. Erst an das
+      // Konto hängen, dann den Stand direkt bei RevenueCat abholen.
+      identifyRevenueCat(state.session?.user?.id);
+      await delay(2500);
+      await syncAppleSubscription();
+      if (!(await pollForAppleActivation(8000))) {
+        await syncAppleSubscription();
+        await pollForAppleActivation(12000);
+      }
     }
     renderSubscriptionActions();
     renderTiles();
