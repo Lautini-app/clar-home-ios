@@ -108,8 +108,10 @@ Apps) nicht mehr auf Stripe/Web-Preisen.
 
 Zugriff auf eine App ist frei, wenn **eine** dieser Quellen aktiv ist:
 
-- `apple_subscriptions` (Apple-IAP)
-- `groups`/`group_members` (Familien-Sharing in clar)
+- `apple_subscriptions` (Apple-IAP) — der einzige Zugangsweg in der Hülle
+
+Familiengruppen (`groups`/`group_members`) liest die Hülle seit 08.10.2026
+nicht mehr: Eingeladene nutzen die Web-App.
 
 Die iOS-App liest **keine** Stripe-Tabelle `subscribers` und sperrt den
 Apple-Kauf nicht wegen eines Web-Abos. Stripe bleibt auf dem Web-Weg

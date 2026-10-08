@@ -548,11 +548,9 @@ const screens = {
 
 const state = {
   session: null,
-  groupApps: new Set(),
-  appleApps: new Set(),        // Apple-IAP-Abo
+  appleApps: new Set(),        // Apple-IAP-Abo — einziger Zugangsweg in der iOS-Hülle
   appleSubActive: false,
   entitlementLoadError: false,
-  activeGroupIds: [],
   pushRegistered: false,
   paywall: {
     billing: 'yearly',
@@ -1297,40 +1295,25 @@ function clearStoredSession() {
   } catch (_error) { /* ignore */ }
 }
 
+// Zugang in der iOS-Hülle gibt es nur über ein Apple-Abo (apple_subscriptions).
+// Familiengruppen (groups/group_members) werden hier bewusst NICHT gelesen:
+// Eingeladene nutzen die Web-App, und Web gekauft = Web genutzt.
 async function loadAccess() {
-  state.groupApps = new Set();
   state.appleApps = new Set();
   state.appleSubActive = false;
-  state.activeGroupIds = [];
   state.entitlementLoadError = false;
 
   if (!state.session?.user?.id) return;
 
   try {
     const userId = state.session.user.id;
-    const [groupMembersResult, appleResult] = await Promise.all([
-      supabase
-        .from('group_members')
-        .select('group_id, status')
-        .eq('user_id', userId)
-        .eq('status', 'active'),
-      supabase
-        .from('apple_subscriptions')
-        .select('entitlement, status, expires_at, selected_apps')
-        .eq('user_id', userId)
-    ]);
+    const appleResult = await supabase
+      .from('apple_subscriptions')
+      .select('entitlement, status, expires_at, selected_apps')
+      .eq('user_id', userId);
 
-    if (groupMembersResult.error) throw groupMembersResult.error;
     if (appleResult.error) {
       console.warn('[apple-subs] read failed', appleResult.error.message);
-    }
-
-    state.activeGroupIds = (groupMembersResult.data || [])
-      .filter((row) => row.status === 'active' && row.group_id)
-      .map((row) => row.group_id);
-
-    if (state.activeGroupIds.length) {
-      await loadGroupApps(state.activeGroupIds);
     }
 
     const nowIso = new Date().toISOString();
@@ -1380,55 +1363,6 @@ async function loadAccess() {
   } catch (_error) {
     state.entitlementLoadError = true;
   }
-}
-
-async function loadGroupApps(groupIds) {
-  const uniqueGroupIds = [...new Set(groupIds)];
-  const { data, error } = await supabase
-    .from('groups')
-    .select('*')
-    .in('id', uniqueGroupIds);
-
-  if (error) throw error;
-
-  (data || []).forEach((group) => {
-    extractAppsFromGroup(group).forEach((appKey) => state.groupApps.add(appKey));
-  });
-}
-
-function extractAppsFromGroup(group) {
-  const appKeys = new Set();
-  Object.entries(group || {}).forEach(([field, value]) => {
-    if (value === true) {
-      const keyFromField = appKeyFromValue(field);
-      if (keyFromField) appKeys.add(keyFromField);
-      return;
-    }
-    collectAppValues(value).forEach((candidate) => {
-      const appKey = appKeyFromValue(candidate);
-      if (appKey) appKeys.add(appKey);
-    });
-  });
-  return appKeys;
-}
-
-function collectAppValues(value) {
-  if (value == null || typeof value === 'boolean' || typeof value === 'number') return [];
-  if (Array.isArray(value)) return value.flatMap(collectAppValues);
-  if (typeof value === 'object') {
-    const values = [];
-    Object.entries(value).forEach(([field, nestedValue]) => {
-      if (nestedValue === true) values.push(field);
-      values.push(...collectAppValues(nestedValue));
-    });
-    return values;
-  }
-  const text = String(value).trim();
-  if (!text) return [];
-  if ((text.startsWith('[') && text.endsWith(']')) || (text.startsWith('{') && text.endsWith('}'))) {
-    try { return collectAppValues(JSON.parse(text)); } catch (_error) { return [text]; }
-  }
-  return text.split(/[,;|]+/).map((item) => item.trim()).filter(Boolean);
 }
 
 function renderTiles() {
@@ -1511,10 +1445,7 @@ function createActionText(text, className = '') {
 }
 
 function hasAppAccess(app) {
-  return state.groupApps.has('all')
-    || state.appleApps.has('all')
-    || state.groupApps.has(app.key)
-    || state.appleApps.has(app.key);
+  return state.appleApps.has('all') || state.appleApps.has(app.key);
 }
 
 function appKeyFromValue(value) {
