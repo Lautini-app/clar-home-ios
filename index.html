@@ -1048,8 +1048,21 @@ async function restorePurchases() {
       // Käufe ausserhalb des Kauf-Knopfs (Angebotscode, App-Store-Abo-Seite,
       // neues Gerät) hängen bei RevenueCat an einer anonymen ID. Erst an das
       // Konto hängen, dann den Stand direkt bei RevenueCat abholen.
-      identifyRevenueCat(state.session?.user?.id);
-      await delay(2500);
+      // Despia kennt kein reines logIn. Der Kauf-Aufruf mit external_id meldet
+      // RevenueCat zuerst die Konto-UUID; StoreKit erkennt das laufende Abo
+      // («bereits abonniert», keine Belastung) und RevenueCat überträgt es
+      // auf die UUID (Transfer Behavior «Transfer to new App User ID»).
+      const activeItem = (history || []).find((item) => item && item.isActive === true &&
+        String(item.productId || '').indexOf('ch.lautini.clar') === 0);
+      const uid = state.session?.user?.id;
+      if (activeItem && uid) {
+        despia(`revenuecat://purchase?external_id=${encodeURIComponent(uid)}` +
+          `&product=${encodeURIComponent(activeItem.productId)}`);
+        await delay(6000);
+      } else {
+        identifyRevenueCat(uid);
+        await delay(2500);
+      }
       await syncAppleSubscription();
       if (!(await pollForAppleActivation(8000))) {
         await syncAppleSubscription();
