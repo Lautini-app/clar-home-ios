@@ -36,7 +36,9 @@ ausgegraut, bis an der nativen App-Version etwas geändert wird.
 - Erstmalige Abos müssen **zusammen mit einer App-Version und der
   Gruppen-Version** übermittelt werden, sonst
   `SUBSCRIPTION_SUBMISSION_REQUIRES_GROUP_VERSION`.
-- Alle sechs Abos sind **nur in der Schweiz** verfügbar.
+- Alle sechs Abos stehen seit dem 03.10.2026 auf **alle Länder** (nötig, damit
+  StoreKit sie im Sandbox-Konto des Apple-Prüfers findet). Die **App** bleibt
+  auf die Schweiz beschränkt — dort greift die Markt-Sperre. Nicht zurückdrehen.
 - **App Store Connect speichert Anhänge nicht im Entwurf.** Eine Antwort mit
   Video braucht die Datei beim Senden neu angehängt — das hat einmal acht Tage
   gekostet.
@@ -75,8 +77,14 @@ Muster folgen.
 ## Feste Vorgaben
 
 - **Deutsch**, auch in Commit-Nachrichten und in der Oberfläche.
-- **Schweiz-only** (revDSG). Abos sind nur in CHE verfügbar. Keine Ausweitung
-  ohne ausdrückliche Rückfrage.
+- **Schweiz-only** (revDSG) — gemeint ist die *Ausrichtung*, nicht die Erreichbarkeit.
+  Die **App im App Store** ist auf die Schweiz beschränkt (1 Land verfügbar,
+  174 nicht). Die **Abo-Produkte** stehen seit dem 03.10.2026 bewusst auf *alle
+  Länder* — sonst findet StoreKit sie im Sandbox-Konto des Apple-Prüfers nicht
+  und der Kauf scheitert (Ablehnung 2.1(b) vom 03.10.). Das weitet den Markt
+  nicht aus, weil die App-Sperre davor greift. **Nicht zurückdrehen.**
+  Keine Ausweitung der *Ausrichtung* (Euro-Preise, DACH-Nennungen, DE/AT-Märkte,
+  bezahlte Anzeigen ausserhalb CH) ohne ausdrückliche Rückfrage.
 - **Gesundheitsdaten von Kindern.** Datensparsamkeit geht vor Bequemlichkeit.
   E-Mail-Erinnerungen wurden bewusst nicht gebaut, weil dafür Adressen von
   Angehörigen gespeichert werden müssten.
